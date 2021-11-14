@@ -1,0 +1,16 @@
+message: 2 element array divided by a colomn
+
+1 element: request type
+start   -   start detection with the given data
+stop    -   stop detection(no params needed)
+set     -   set detection parameters(restart detector with new params)
+get     -   get detector settings(no params needed)
+
+2 element: request data
+["source","weights(relative on detector server)", needed frames to detect, image size, confidence treshold, NMS(Non-maximum suppression) treshold, max detections, min. distance(in meters)]
+
+dictionary representation:
+{"src":"","wg":"","frames":"";"imgsz":"","conf":"","nms":"","max":"","min":""}
+
+response:
+  dictionary+streaming url
