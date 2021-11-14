@@ -5,3 +5,4 @@
 - Web
   - Django
   - MySQL/MariaDB
+  -python - requests, websocket, asyncio
