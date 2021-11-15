@@ -22,6 +22,7 @@ mycursor = mydb.cursor()
 #mysql connector end
 
 import time
+import datetime
 
 import argparse
 import os
@@ -32,6 +33,7 @@ import cv2
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
+
 
 #changepath for imports
 path = './yolov5'
@@ -136,6 +138,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
     if pt and device.type != 'cpu':
         model(torch.zeros(1, 3, *imgsz).to(device).type_as(next(model.parameters())))  # run once
     dt, seen = [0.0, 0.0, 0.0], 0
+    start_time = datetime.datetime.now()
     for path, img, im0s, vid_cap, s in dataset:
         t1 = time_sync()
         img = torch.from_numpy(img).to(device)
@@ -193,11 +196,8 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         #   f.write(('%g ' * len(line)).rstrip() % line + '\n')
                         sql = "INSERT INTO events (xbox, ybox,wbox,hbox,classid,time,videotime,videoID,level) VALUES (%s, %s,%s, %s,%s, %s,%s, %s,%s)"
                         val = (str(xywh[0]),str(xywh[1]),str(xywh[2]),str(xywh[3]), int(clss[0]), time.strftime("%Y-%m-\%d %H:%M:%S", current_time),0,0,0)
-                        print(clss)
                         mycursor.execute(sql, val)
                         mydb.commit()
-
-                        print(mycursor.rowcount, "record inserted.")
 
                     if save_img or save_crop or view_img:  # Add bbox to image
                         c = int(cls)  # integer class
@@ -232,15 +232,13 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                             save_path += '.mp4'
                         vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                     vid_writer[i].write(im0)
-
-    # Print results
-    t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
-    LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
-    if save_txt or save_img:
-        s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
-        LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
-    if update:
-        strip_optimizer(weights)  # update model (to fix SourceChangeWarning)
+        time_spent= datetime.datetime.now()-start_time
+        if time_spent.total_seconds() >= 5:
+            sql = "INSERT INTO videos (videoName,videoDate,videoURL,videoAvailable) VALUES (%s,%s,%s, %s)"
+            val = (p.name, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()), save_path, 1)
+            mycursor.execute(sql, val)
+            mydb.commit()
+            break
 
 def main(opt):
     check_requirements(exclude=('tensorboard', 'thop'))
