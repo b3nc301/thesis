@@ -6,7 +6,7 @@
 
         <x-slot name="header">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Dashboard') }}
+                {{ __('Reports') }}
             </h2>
         </x-slot>
 
@@ -28,9 +28,40 @@
                                 </select>
                             <button type="button" class="btn btn-primary">Search</button>
                       </div>
-                    </table>
+
                     </div>
+
                 </div>
+                <table class="table">
+                    <thead>
+                      <tr>
+                        <th scope="col">eventID</th>
+                        <th scope="col">Event type</th>
+                        <th scope="col">Time</th>
+                        <th scope="col">Duration</th>
+                        <th scope="col">Video name</th>
+                        <th scope="col">Event level</th>
+                        <th scope="col">View</th>
+                        <th scope="col">Save</th>
+                        <th scope="col">Delete</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($events as $report)
+                        <tr>
+                        <th scope="col">{{$report->id}}</th>
+                        <td>{{$report->classID}}</td>
+                        <td>{{$report->time}}</td>
+                        <td>{{$report->videoframe/60}}</td>
+                        <td>asd</td>
+                        <td>{{$report->level}}</td>
+                        <td><button type="button" class="btn btn-success">View</button></td>
+                        <td><button type="button" class="btn btn-primary">Download</button></td>
+                        <td><button type="button" class="btn btn-danger">Delete</button></td>
+                    </tr>
+                        @endforeach
+                    </tbody>
+                  </table>
             </div>
         </div>
     </x-app-layout>

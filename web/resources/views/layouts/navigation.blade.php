@@ -16,7 +16,7 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
                     <x-nav-link :href="route('live')" :active="request()->routeIs('live')">
-                        {{ __('Live Video') }}
+                        {{ __('Set detector') }}
                     </x-nav-link>
                     <x-nav-link :href="route('vids')" :active="request()->routeIs('vids')">
                         {{ __('Video Library') }}

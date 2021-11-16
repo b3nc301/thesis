@@ -34,8 +34,8 @@
                     -->
                       <div>Video settings:</div>
                       <div>Detector configured IP address: <b>{{env('DETECTOR_IP')}}</b></div>
-                      <div>Configured source:  <button type="button" class="button button1"> Modify</button></div>
-                      <div>Configured weights: <button type="button" class="button button1"> Modify</button></div>
+                      <div>Configured source:  <button type="button" class="btn btn-primary"> Modify</button></div>
+                      <div>Configured weights: <button type="button" class="btn btn-primary"> Modify</button></div>
                     </div>
                 </div>
             </div>

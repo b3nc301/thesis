@@ -139,6 +139,11 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         model(torch.zeros(1, 3, *imgsz).to(device).type_as(next(model.parameters())))  # run once
     dt, seen = [0.0, 0.0, 0.0], 0
     start_time = datetime.datetime.now()
+    sql = "INSERT INTO videos (videoName,videoDate,videoURL,videoAvailable) VALUES (%s,%s,%s, %s)"
+    val = (time.strftime("%Y%m%d%H%M%S", time.localtime())+source, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),'not ready', 0)
+    mycursor.execute(sql, val)
+    mydb.commit()
+    videoID=mycursor.lastrowid;
     for path, img, im0s, vid_cap, s in dataset:
         t1 = time_sync()
         img = torch.from_numpy(img).to(device)
@@ -194,10 +199,11 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         current_time = time.localtime()
                         #with open(txt_path + '.txt', 'a') as f:
                         #   f.write(('%g ' * len(line)).rstrip() % line + '\n')
-                        sql = "INSERT INTO events (xbox, ybox,wbox,hbox,classid,time,videotime,videoID,level) VALUES (%s, %s,%s, %s,%s, %s,%s, %s,%s)"
-                        val = (str(xywh[0]),str(xywh[1]),str(xywh[2]),str(xywh[3]), int(clss[0]), time.strftime("%Y-%m-\%d %H:%M:%S", current_time),0,0,0)
-                        mycursor.execute(sql, val)
-                        mydb.commit()
+                        if int(clss[0])==2:
+                            sql = "INSERT INTO events (xbox, ybox,wbox,hbox,classid,time,videotime,videoID,level) VALUES (%s, %s,%s, %s,%s, %s,%s, %s,%s)"
+                            val = (str(xywh[0]),str(xywh[1]),str(xywh[2]),str(xywh[3]), int(clss[0]), time.strftime("%Y-%m-\%d %H:%M:%S", current_time),0, videoID,0)
+                            mycursor.execute(sql, val)
+                            mydb.commit()
 
                     if save_img or save_crop or view_img:  # Add bbox to image
                         c = int(cls)  # integer class
@@ -232,12 +238,15 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                             save_path += '.mp4'
                         vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                     vid_writer[i].write(im0)
+
         time_spent= datetime.datetime.now()-start_time
-        if time_spent.total_seconds() >= 5:
-            sql = "INSERT INTO videos (videoName,videoDate,videoURL,videoAvailable) VALUES (%s,%s,%s, %s)"
-            val = (p.name, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()), save_path, 1)
+        if time_spent.total_seconds() >= 15:
+            sql = "UPDATE videos SET videoURL=%s, videoAvailable=%s WHERE id=%s"
+            val = (save_path+".webm", 1, videoID)
             mycursor.execute(sql, val)
             mydb.commit()
+            vid_writer[i].release()
+            os.system("ffmpeg -i "+ save_path+" -c:v libvpx-vp9 -crf 30 -b:v 0 "+ save_path+".webm")
             break
 
 def main(opt):

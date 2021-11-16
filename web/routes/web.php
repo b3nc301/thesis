@@ -1,6 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\EventsController;
+use App\Http\Controllers\VideosController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -27,11 +30,15 @@ Route::get('/live', function () {
 })->middleware(['auth'])->name('live');
 
 Route::get('/reports', function () {
-    return view('reports');
+    return view('reports', ['events' => EventsController::getAllEvents()]);
 })->middleware(['auth'])->name('reports');
 
 Route::get('/vids', function () {
-    return view('vids');
+    return view('vids', ['videos' => VideosController::getAllVideos()]);
 })->middleware(['auth'])->name('vids');
+
+Route::post('/deleteVideo', [VideosController::class, 'deleteVideo']);
+
+
 
 require __DIR__.'/auth.php';
