@@ -17,10 +17,10 @@ use App\Http\Controllers\VideosController;
 */
 
 Route::get('/', function () {
-    return view('welcome');
-});
+    return view('dashboard');
+})->middleware(['auth'])->name('dashboard');
 
-Route::get('/dashboard', function () {
+Route::get('/login', function () {
     return view('dashboard');
 })->middleware(['auth'])->name('dashboard');
 
