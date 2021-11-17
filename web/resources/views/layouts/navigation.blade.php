@@ -21,8 +21,8 @@
                     <x-nav-link :href="route('vids')" :active="request()->routeIs('vids')">
                         {{ __('Video Library') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('reports')" :active="request()->routeIs('reports')">
-                        {{ __('Reports') }}
+                    <x-nav-link :href="route('events')" :active="request()->routeIs('reports')">
+                        {{ __('Events') }}
                     </x-nav-link>
                 </div>
             </div>
@@ -74,6 +74,15 @@
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('live')" :active="request()->routeIs('live')">
+                {{ __('Set detector') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('vids')" :active="request()->routeIs('vids')">
+                {{ __('Video Library') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('events')" :active="request()->routeIs('reports')">
+                {{ __('Events') }}
             </x-responsive-nav-link>
         </div>
 

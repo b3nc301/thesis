@@ -20,7 +20,7 @@
 
         <x-slot name="header">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Dashboard') }}
+                {{ __('Video Settings') }}
             </h2>
         </x-slot>
 
@@ -36,6 +36,11 @@
                       <div>Detector configured IP address: <b>{{env('DETECTOR_IP')}}</b></div>
                       <div>Configured source:  <button type="button" class="btn btn-primary"> Modify</button></div>
                       <div>Configured weights: <button type="button" class="btn btn-primary"> Modify</button></div>
+                      <div>Needed frames for detection: <button type="button" class="btn btn-primary"> Modify</button></div>
+                      <div>Confidence treshold: <button type="button" class="btn btn-primary"> Modify</button></div>
+                      <div>Non-maximum supression treshold: <button type="button" class="btn btn-primary"> Modify</button></div>
+                      <div>Maximum detections per image: <button type="button" class="btn btn-primary"> Modify</button></div>
+                      <div>Minimum needed distance between people: <button type="button" class="btn btn-primary"> Modify</button></div>
                     </div>
                 </div>
             </div>

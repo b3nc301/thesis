@@ -24,8 +24,10 @@ class Videos extends Model
         'videoAvailable' => 'boolean'
     ];
 
-    public function events(){
 
-	}
+    public function events()
+    {
+        return $this->hasMany(Events::class);
+    }
 
 }

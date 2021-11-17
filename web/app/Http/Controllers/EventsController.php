@@ -9,12 +9,31 @@ use Illuminate\Support\Facades\Auth;
 
 class EventsController extends Controller
 {
-    public static function getAllEvents(){
-        return Events::all();
+    public static function getEvents(Request $request){
+        if($request->filled('starttime')){
+            $starttime = $request->input('starttime');
+        }
+        else{
+            $starttime =  date("Y-m-d H:i:s", strtotime("-1 hours"));
+        }
+        if($request->filled('endtime')){
+            $endtime = $request->input('endtime');
+        }
+        else{
+            $endtime =  date("Y-m-d H:i:s");
+        }
+        if($request->filled('level')){
+            return view('events', ['events' => Events::whereBetween('time', [$starttime, $endtime])->where('level',$request->input('level'))->cursor()]);
+        }
+        else{
+        return view('events', ['events' => Events::whereBetween('time', [$starttime, $endtime])->cursor()]);
+        }
     }
     public static function deleteEvent(Request $request){
         if(Auth::check()){
             Events::find($request->input('id'))->delete();
         }
     }
+
+
 }

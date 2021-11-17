@@ -14,17 +14,20 @@
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 bg-white border-b border-gray-200">
+                    <form action="/vids" method="GET">
+                    @csrf
                       <div class="eventSearch">
                             <label for="starttime" >Start Time:</label>
-                            <input type="datetime-local" id="starttime" name="starttime" class="m-2">
+                            <input type="datetime-local" id="starttime" name="starttime" class="m-2" step="1" value=<?php if(isset($_GET['starttime'])) echo( $_GET['starttime']) ?>>
                             <label for="endtime" >End Time:</label>
-                            <input type="datetime-local" id="endtime" name="endtime" class="m-2">
-                            <button type="button" class="btn btn-primary">Search</button>
+                            <input type="datetime-local" id="endtime" name="endtime" class="m-2" step="1" value=<?php if(isset($_GET['endtime'])) echo( $_GET['endtime']) ?>>
+                            <button type="submit" class="btn btn-primary" >Search</button>
                       </div>
-
+                    </form>
                     </div>
 
                 </div>
+                <div class="table-responsive">
                 <table class="table">
                     <thead>
                       <tr>
@@ -52,6 +55,7 @@
                         @endforeach
                     </tbody>
                   </table>
+                </div>
                   <!--view modal-->
                   <div class="modal fade" id="viewModal" tabindex="-1" aria-labelledby="viewModalLabel" aria-hidden="true">
                     <div class="modal-dialog modal-xl">

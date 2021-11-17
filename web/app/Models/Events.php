@@ -26,12 +26,13 @@ class Events extends Model
     protected $casts = [
         'time' => 'datetime'
     ];
-    public function videos(){
-
-	}
-    public function classes(){
-
-
+    public function video()
+    {
+        return $this->belongsTo(Videos::class, 'videoID');
+    }
+    public function class()
+    {
+        return $this->belongsTo(Classes::class, 'classID');
     }
 
 

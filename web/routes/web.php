@@ -29,13 +29,9 @@ Route::get('/live', function () {
     return view('live');
 })->middleware(['auth'])->name('live');
 
-Route::get('/reports', function () {
-    return view('reports', ['events' => EventsController::getAllEvents()]);
-})->middleware(['auth'])->name('reports');
+Route::get('/events',[EventsController::class, 'getEvents'])->middleware(['auth'])->name('events');
 
-Route::get('/vids', function () {
-    return view('vids', ['videos' => VideosController::getAllVideos()]);
-})->middleware(['auth'])->name('vids');
+Route::get('/vids', [VideosController::class, 'getVideos'])->middleware(['auth'])->name('vids');
 
 Route::post('/deleteVideo', [VideosController::class, 'deleteVideo']);
 
