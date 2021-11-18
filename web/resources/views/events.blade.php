@@ -1,6 +1,5 @@
 <head>
     <title>Events reports</title>
-    <link rel="stylesheet"href="css/layout.css" >
     </head>
     <x-app-layout>
 
