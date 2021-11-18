@@ -3,7 +3,6 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EventsController;
 use App\Http\Controllers\VideosController;
-use App\Http\Controllers\Socket;
 
 
 /*
