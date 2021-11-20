@@ -55,7 +55,7 @@
                         <th scope="col">{{$report->id}}</th>
                         <td>{{$report->classID}}</td>
                         <td>{{$report->time}}</td>
-                        <td>{{$report->videoframe/60}}</td>
+                        <td>{{$report->frames/60}}</td>
                         <td>asd</td>
                         <td>{{$report->level}}</td>
                         <td><button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#viewModal" data-bs-url={{$report->video->videoURL}}> View</button></td>

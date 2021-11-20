@@ -15,15 +15,13 @@ class CreateEventsTable extends Migration
     {
         Schema::create('events', function (Blueprint $table) {
             $table->id();
-            $table->float("xbox");
-            $table->float("ybox");
-            $table->float("wbox");
-            $table->float("hbox");
             $table->integer("classID");
             $table->timestamp("time");
-            $table->integer("videoTime");
+            $table->integer("frames");
             $table->integer("videoID");
             $table->integer("level");
+            $table->integer("predID");
+
         });
     }
 

@@ -13,13 +13,9 @@ class Events extends Model
     public $timestamps = false;
 
     protected $fillable = [
-		'xbox',
-		'ybox',
-		'wbox',
-		'hbox',
         'classID',
         'time',
-        'videoTime',
+        'frames',
         'videoID',
         'level'
 	];
