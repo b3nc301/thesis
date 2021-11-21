@@ -19,12 +19,12 @@
                     <div class="p-6 bg-white border-b border-gray-200">
                         <div id="liveAlert"></div>
                         <video
-                        id="my-video"
+                        id="live-stream"
                         controls
 			class="video-js vjs-default-skin mb-5"
                         width="1280"
                         height="720">
-                        <source src="/lives/test.m3u8" type="application/x-mpegURL" />
+                        <source src="/lives/stream.m3u8" type="application/x-mpegURL" />
                       </video>
 
 
@@ -37,7 +37,6 @@
                           <button type="button" class="btn btn-primary" onclick=changeData()> Change data</button>
                         </div>
                       <div>Configured source:</div> <input type="text" id="src">
-                      <div>Needed frames for detection:</div> <input type="number" id="frames">
                       <div>Confidence treshold:</div> <input type="number" id="conf">
                       <div>Maximum detections per image:</div> <input type="number" id="max">
                       <div>Minimum needed distance between people:</div> <input type="number" id="min">
@@ -62,6 +61,6 @@
 <script src="https://vjs.zencdn.net/7.2.3/video.js"></script>
 
 <script>
-var player = videojs('my-video');
+var player = videojs('live-stream');
 player.play();
 </script>

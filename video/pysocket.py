@@ -5,7 +5,6 @@ import json
 import time
 
 originalData = {"src":"rtsp://localhost/",
-"frames":"3",
 "conf":"0.7",
 "max":"10",
 "min":"1.5"}
@@ -26,7 +25,7 @@ async def setup(websocket, path):
                 except:
                     await websocket.send(json.dumps({"status":"fail","proc":"start"}))
                 data = {**data, **receivedData}
-                prep = data["src"] + data["frames"] + data["conf"] + data["max"] + data["min"]
+                prep = data["src"]  + data["conf"] + data["max"] + data["min"]
                 if proc is None:
                     proc = subprocess.Popen(["python3", "backend.py", prep])
                 elif proc.poll() is not None:
@@ -48,7 +47,7 @@ async def setup(websocket, path):
                 data = {**data, **receivedData}
                 if proc is not None:
                     if proc.poll() is None:
-                        prep = data["src"] + data["frames"]+ data["conf"]  + data["max"] + data["min"]
+                        prep = data["src"] + data["conf"]  + data["max"] + data["min"]
                         proc.terminate()
                         roc = subprocess.Popen(["python3", "backend.py", prep])
                         if proc.poll() is not None:

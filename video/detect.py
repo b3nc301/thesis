@@ -13,7 +13,7 @@ mydb = mysql.connector.connect(
   database="laravel"
 )
 
-rtmp_url = "rtmp://localhost:1935/live/test"
+rtmp_url = "rtmp://localhost:1935/live/stream"
 
 
 mycursor = mydb.cursor()
