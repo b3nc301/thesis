@@ -13,7 +13,7 @@ mydb = mysql.connector.connect(
   database="laravel"
 )
 
-rtmp_url = "rtmp://127.0.0.1:1935/stream"
+rtmp_url = "rtmp://localhost:1935/live/test"
 
 
 mycursor = mydb.cursor()
@@ -117,39 +117,38 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
     if webcam:
         view_img = check_imshow()
         cudnn.benchmark = True  # set True to speed up constant image size inference
-        dataset = LoadStreams(source, img_size=imgsz, stride=stride)
+        dataset = LoadStreams(source, img_size=imgsz, stride=stride, auto=True)
         bs = len(dataset)  # batch_size
     else:
-        dataset = LoadImages(source, img_size=imgsz, stride=stride)
+        dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=True)
         bs = 1  # batch_size
     vid_path, vid_writer = [None] * bs, [None] * bs
 
-    '''
+   
     if webcam:  # video
-        fps, width, height = 30, imgsz[0], imgsz[0]
+        fps, width, height = 15, imgsz[0], imgsz[1]
     else:  # stream
         cap=cv2.VideoCapture(source)
         fps = cap.get(cv2.CAP_PROP_FPS)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    width = 640
-    height = 640
     command = ['ffmpeg',
+            '-re',
            '-y',
            '-f', 'rawvideo',
-           '-vcodec', 'rawvideo',
            '-pix_fmt', 'bgr24',
-           '-s', "{}x{}".format(width, height),
+           '-s', "{}x{}".format(str(width), str(height)),
            '-r', str(fps),
            '-i', '-',
-           '-c:v', 'libx264',
+           '-tune', 'zerolatency',
+           '-crf', '18',
+           '-vcodec', 'libx264',
            '-pix_fmt', 'yuv420p',
-           '-preset', 'ultrafast',
            '-f', 'flv',
            #'-flvflags', 'no_duration_filesize',
            rtmp_url]
-    #p = subprocess.Popen(command, stdin=subprocess.PIPE)
-    '''
+    proc1 = subprocess.Popen(command, stdin=subprocess.PIPE)
+
 
 
     # Run inference
@@ -278,14 +277,17 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         annotator.box_label(xyxy, label, color=colors(c, True))
                         if save_crop:
                             save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
-
+ 
             # Print completed inference(debug only)
             LOGGER.info(f'{s}Done.')
             # Stream results
             im0 = annotator.result()
             if view_img:
                 cv2.imshow(str(p), im0)
-                #p.stdin.write(img)
+                proc1.stdin.write(im0.tobytes())
+
+
+                
                 cv2.waitKey(1)  # 1 millisecond
             # Save results
             if vid_path[i] != save_path:  # new video
@@ -310,3 +312,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
             vid_writer[i].release()
             os.system("ffmpeg -i "+ save_path + ".mp4 -c:v libvpx-vp9 -crf 30 -b:v 0 "+ save_path+".webm")
             break
+    #p.stdin.close()  # Close stdin pipe
+    #p.wait()  # Wait for FFmpeg sub-process to finish
+    #ffplay_process.kill()  # Forcefully close FFplay sub-process
+    #cv2.destroyAllWindows()  # Close OpenCV window

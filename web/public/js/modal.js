@@ -13,7 +13,7 @@ viewModal.addEventListener('show.bs.modal', function (event) {
   //var modalVideoView = viewModal.querySelector('.modal-body source')
   var modalVideoView = viewModal.querySelector('.modal-body')
 
-    modalVideoView.innerHTML = '<video width="1920" height="1080" controls><source src="'+document.location.origin+'/'+url+'#t=2,4" type="video/webm" preload="metadata">Your browser does not support the video tag.</video>'
+    modalVideoView.innerHTML = '<video width="1920" height="1080" controls><source src="'+document.location.origin+'/'+url+'" type="video/webm" preload="metadata">Your browser does not support the video tag.</video>'
   //modalVideoView.setAttribute("src", document.location.origin+"/"+url)
 })
 deleteModal.addEventListener('show.bs.modal', function (event) {
