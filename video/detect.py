@@ -1,26 +1,10 @@
 # YOLOv5 🚀 by Ultralytics, GPL-3.0 license
 
-
-#mysql connector
-import mysql.connector
-import subprocess
-
-
-mydb = mysql.connector.connect(
-  host="localhost",
-  user="laravel",
-  password="laravel",
-  database="laravel"
-)
-
-rtmp_url = "rtmp://localhost:1935/live/stream"
-
-
-mycursor = mydb.cursor()
-#mysql connector end
-
+#rendszer importok
 import time
 import datetime
+import subprocess
+
 
 import argparse
 import os
@@ -47,20 +31,36 @@ ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 
 
-#module imports
+#yolov5 module importálások
 
 from models.experimental import attempt_load
 from utils.datasets import LoadImages, LoadStreams
-from utils.general import apply_classifier, check_img_size, check_imshow, check_requirements, check_suffix, colorstr, \
-    increment_path, non_max_suppression, print_args, save_one_box, scale_coords, strip_optimizer, xyxy2xywh, LOGGER
+from utils.general import check_img_size, check_imshow, check_suffix, colorstr, \
+    increment_path, non_max_suppression, print_args, save_one_box, scale_coords, xyxy2xywh, LOGGER
 from utils.plots import Annotator, colors
-from utils.torch_utils import load_classifier, select_device, time_sync
+from utils.torch_utils import  select_device
 
-#fall back to current script directory
+#vissza a jelenlegi mappába
 os.chdir("../")
 
+#mysql connector definíció
+import mysql.connector
+
+mydb = mysql.connector.connect(
+  host="localhost",
+  user="laravel",
+  password="laravel",
+  database="laravel"
+)
+
+mycursor = mydb.cursor()
+#mysql connector definíció vége
 
 
+#RTMP stream URL
+rtmp_url = "rtmp://localhost:1935/live/stream"
+
+#alap futó függvüny
 @torch.no_grad()
 def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         source=ROOT / 'data/images',  # file/dir/URL/glob, 0 for webcam
@@ -87,20 +87,21 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         hide_conf=False,  # hide confidences
         half=True,  # use FP16 half-precision inference
         ):
+    #forrásvizsgálat, hogy videó-e vagy stream
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
         ('rtsp://', 'rtmp://', 'http://', 'https://'))
 
-    # Directories
+    # Mappák
     save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
     (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
-    # Initialize
+    # CPU/Videókártya inicializálása
     device = select_device(device)
     half &= device.type != 'cpu'  # half precision only supported on CUDA
 
-    # Load model
+    # Modell betöltése
     w = str(weights[0] if isinstance(weights, list) else weights)
     classify, suffix, suffixes = False, Path(w).suffix.lower(), ['.pt', '']
     check_suffix(w, suffixes)  # check weights have acceptable suffix
@@ -113,7 +114,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         model.half()  # to FP16
     imgsz = check_img_size(imgsz, s=stride)  # check image size
 
-    # Dataloader
+    # Dataloader, itt tölti be a videókat/streamet képkockákba
     if webcam:
         view_img = check_imshow()
         cudnn.benchmark = True  # set True to speed up constant image size inference
@@ -124,7 +125,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         bs = 1  # batch_size
     vid_path, vid_writer = [None] * bs, [None] * bs
 
-   
+   #a továbbstreamelés szempontjából lényeges változók
     if webcam:  # video
         fps, width, height = 15, imgsz[0], imgsz[1]
     else:  # stream
@@ -132,6 +133,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         fps = cap.get(cv2.CAP_PROP_FPS)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    #ffmpeg plugin indítási paraméterei
     command = ['ffmpeg',
             '-re',
            '-y',
@@ -145,15 +147,13 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
            '-vcodec', 'libx264',
            '-pix_fmt', 'yuv420p',
            '-f', 'flv',
-           #'-flvflags', 'no_duration_filesize',
            rtmp_url]
+    #ffmpeg plugin indítása
     proc1 = subprocess.Popen(command, stdin=subprocess.PIPE)
 
 
 
-    # Run inference
-    if device.type != 'cpu':
-        model(torch.zeros(1, 3, *imgsz).to(device).type_as(next(model.parameters())))  # run once
+
     #custom
     start_time = datetime.datetime.now()
     sql = "INSERT INTO videos (videoName,videoDate,videoURL,videoAvailable) VALUES (%s,%s,%s, %s)"
@@ -166,6 +166,9 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
     predictionID=0
     frameNum = 0
     #end custom
+    # a hálózat alkalmazása a képkockákon
+    if device.type != 'cpu':
+        model(torch.zeros(1, 3, *imgsz).to(device).type_as(next(model.parameters())))  # run once
     for path, img, im0s, vid_cap, s in dataset:
         frameCounter += 1
         if(frameCounter >= 4):
@@ -179,21 +182,13 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         if len(img.shape) == 3:
             img = img[None]  # expand for batch dim
 
-        # Inference
+        # A hálózatba betáplált képkocka végigfuttatása
         visualize = increment_path(save_dir / Path(path).stem, mkdir=True) if visualize else False
         pred = model(img, augment=augment, visualize=visualize)[0]
 
-        # NMS
+        # Nem-maximum vágás (aktiváció)
         pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
-
-
-
-
-
-
-
-
-        # Process predictions
+        # A megtalált becslések feldolgozása
         for i, det in enumerate(pred):  # per image
             if webcam:  # batch_size >= 1
                 p, im0, frame = path[i], im0s[i].copy(), dataset.count
