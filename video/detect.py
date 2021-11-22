@@ -152,8 +152,9 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
     #sql
     start_time = datetime.datetime.now() # a videó kezdeti időpontja
+    start_localtime = time.localtime()
     sql = "INSERT INTO videos (videoName,videoDate,videoURL,videoAvailable) VALUES (%s,%s,%s, %s)" # SQL insert kérés
-    val = (time.strftime("%Y%m%d%H%M%S", time.localtime())+source, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),'not ready', 0)
+    val = (time.strftime("%Y%m%d%H%M%S", start_localtime)+source, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),'not ready', 0)
     mycursor.execute(sql, val) # SQL kérés végrehajtása
     mydb.commit() # SQL kérés lezárása
     videoID=mycursor.lastrowid;# Az éppen mentendő videó ID-ja
@@ -304,14 +305,10 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         time_spent= datetime.datetime.now()-start_time
         if time_spent.total_minutes() > 60:
             sql = "UPDATE videos SET videoURL=%s, videoAvailable=%s WHERE id=%s"
-            val = (save_path+".webm", 1, videoID)
+            val = (save_dir+"/"+time.strftime("%Y%m%d%H%M%S", start_localtime)+source+".webm", 1, videoID)
             mycursor.execute(sql, val)
             mydb.commit()
             vid_writer[i].release()
-            subprocess.Popen("ffmpeg -i "+ save_path + ".mp4 -c:v libvpx-vp9 -crf 30 -b:v 0 "+ save_path+".webm")
-            
+            subprocess.Popen("ffmpeg -i "+ save_path + ".mp4 -c:v libvpx-vp9 -crf 30 -b:v 0 "+ save_dir+"/"+time.strftime("%Y%m%d%H%M%S", start_localtime)+source+".webm")
+            start_localtime = time.localtime()
             break
-    #p.stdin.close()  # Close stdin pipe
-    #p.wait()  # Wait for FFmpeg sub-process to finish
-    #ffplay_process.kill()  # Forcefully close FFplay sub-process
-    #cv2.destroyAllWindows()  # Close OpenCV window
