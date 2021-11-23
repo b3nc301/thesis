@@ -33,7 +33,7 @@ ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 from models.experimental import attempt_load
 from utils.datasets import LoadImages, LoadStreams
 from utils.general import check_img_size, check_imshow, check_suffix, colorstr, \
-    increment_path, non_max_suppression, print_args, save_one_box, scale_coords, xyxy2xywh, LOGGER
+    increment_path, non_max_suppression, print_args, scale_coords, xyxy2xywh, LOGGER
 from utils.plots import Annotator, colors
 from utils.torch_utils import  select_device
 
@@ -68,7 +68,6 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         stream_img=False,  # show results
         save_video=False,  # save results to *.txt
         save_conf=False,  # save confidences in --save-txt labels
-        save_crop=False,  # save cropped prediction boxes
         nosave=False,  # do not save images/videos
         classes=None,  # filter by class: --class 0, or --class 0 2 3
         agnostic_nms=False,  # class-agnostic NMS
@@ -202,7 +201,6 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
             save_path = str(save_dir / p.name)
             s += '%gx%g ' % img.shape[2:]  # kiíró string(debug)
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
-            imc = im0.copy() if save_crop else im0  # for save_crop
             annotator = Annotator(im0, line_width=line_thickness, example=str(names))
             #Detektálások feldolgozása 
             if len(det):
@@ -271,12 +269,10 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                                 mydb.commit()
 
 
-                    if save_crop or stream_img:  # Add bbox to image(befoglaló geometria képre mentése)
+                    if stream_img:  # Add bbox to image(befoglaló geometria képre mentése)
                         c = int(cls)  # integer class
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
-                        if save_crop:
-                            save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
  
             # Print completed inference(debug only)
             LOGGER.info(f'{s}Done.')
