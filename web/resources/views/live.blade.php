@@ -38,7 +38,6 @@
                         </div>
                       <div>Configured source:</div> <input type="text" id="src">
                       <div>Confidence treshold:</div> <input type="number" id="conf">
-                      <div>Maximum detections per image:</div> <input type="number" id="max">
                       <div>Minimum needed distance between people:</div> <input type="number" id="min">
                     </div>
                     </div>

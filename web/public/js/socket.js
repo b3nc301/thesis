@@ -12,7 +12,6 @@ socket.addEventListener('message', function (event) {
     var data = JSON.parse(event.data);
     document.getElementById("src").setAttribute("value",data.src);
     document.getElementById("conf").setAttribute("value",data.conf);
-    document.getElementById("max").setAttribute("value",data.max);
     document.getElementById("min").setAttribute("value",data.min);
 });
 }
@@ -22,7 +21,6 @@ function startDetector(){
     var socket = new WebSocket(host);
     var data = 'start;{"src":"'+document.getElementById("src").value+
     '", "conf":"'+document.getElementById("conf").value+
-    '", "max":"'+document.getElementById("max").value+
     '", "min":"'+document.getElementById("min").value+
     '"}';
     var alert = document.getElementById('liveAlert')
@@ -75,7 +73,6 @@ function stopDetector(){
         var socket = new WebSocket(host);
         var data='change;{"src":"'+document.getElementById("src").value+
         '", "conf":"'+document.getElementById("conf").value+
-        '", "max":"'+document.getElementById("max").value+
         '", "min":"'+document.getElementById("min").value+
         '"}';
         var alert = document.getElementById('liveAlert')
