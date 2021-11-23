@@ -1,5 +1,5 @@
 <head>
-    <title>Live video</title>
+    <title>Detektor beállításai</title>
 
  <link href="https://vjs.zencdn.net/7.2.3/video-js.css" rel="stylesheet">
 
@@ -9,7 +9,7 @@
 
         <x-slot name="header">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Video Settings') }}
+                {{ __('Detektor beállírásai') }}
             </h2>
         </x-slot>
 
@@ -29,16 +29,16 @@
 
 
                     <div class="liveButtons">
-                      <div>Detector configured IP address: <b>{{env('DETECTOR_IP')}}</b></div>
+                      <div>Detektor beállított IP címe: <b>{{env('DETECTOR_IP')}}</b></div>
                       <div class="liveControl">
-                          <button type="button" class="btn btn-success" onclick=startDetector()> Start detector</button>
-                          <button type="button" class="btn btn-danger" onclick=stopDetector()> Stop detector</button>
-                          <button type="button" class="btn btn-primary" onclick=getData()> Fetch data</button>
-                          <button type="button" class="btn btn-primary" onclick=changeData()> Change data</button>
+                          <button type="button" class="btn btn-success" onclick=startDetector()> Detektor indítása</button>
+                          <button type="button" class="btn btn-danger" onclick=stopDetector()> Detektor leállítása</button>
+                          <button type="button" class="btn btn-primary" onclick=getData()> Adatok lekérése</button>
+                          <button type="button" class="btn btn-primary" onclick=changeData()> Adatok módosítása</button>
                         </div>
-                      <div>Configured source:</div> <input type="text" id="src">
-                      <div>Confidence treshold:</div> <input type="number" id="conf">
-                      <div>Minimum needed distance between people:</div> <input type="number" id="min">
+                      <div>Beállított forrás:</div> <input type="text" id="src">
+                      <div>Beállított bizonyossági küszöb:</div> <input type="number" id="conf">
+                      <div>Minimum szükséges távolság emberek között:</div> <input type="number" id="min">
                     </div>
                     </div>
                 </div>

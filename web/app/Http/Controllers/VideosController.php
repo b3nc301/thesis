@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 class VideosController extends Controller
 {
     public static function getVideos(Request $request){
+        date_default_timezone_set("Europe/Budapest");
         if($request->filled('starttime')){
             $starttime = $request->input('starttime');
         }

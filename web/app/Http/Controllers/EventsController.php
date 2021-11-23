@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 class EventsController extends Controller
 {
     public static function getEvents(Request $request){
+        date_default_timezone_set("Europe/Budapest");
         if($request->filled('starttime')){
             $starttime = $request->input('starttime');
         }

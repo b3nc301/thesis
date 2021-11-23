@@ -13,16 +13,16 @@
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
+                        {{ __('Kezdőlap') }}
                     </x-nav-link>
                     <x-nav-link :href="route('live')" :active="request()->routeIs('live')">
-                        {{ __('Set detector') }}
+                        {{ __('Detektor beállítása') }}
                     </x-nav-link>
                     <x-nav-link :href="route('vids')" :active="request()->routeIs('vids')">
-                        {{ __('Video Library') }}
+                        {{ __('Videók megtekintése') }}
                     </x-nav-link>
                     <x-nav-link :href="route('events')" :active="request()->routeIs('reports')">
-                        {{ __('Events') }}
+                        {{ __('Események megtekintése') }}
                     </x-nav-link>
                 </div>
             </div>
@@ -50,7 +50,7 @@
                             <x-dropdown-link :href="route('logout')"
                                     onclick="event.preventDefault();
                                                 this.closest('form').submit();">
-                                {{ __('Log Out') }}
+                                {{ __('Kijelentkezés') }}
                             </x-dropdown-link>
                         </form>
                     </x-slot>
@@ -73,16 +73,16 @@
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
+                {{ __('Kezdőlap') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('live')" :active="request()->routeIs('live')">
-                {{ __('Set detector') }}
+                {{ __('Detektor beállítása') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('vids')" :active="request()->routeIs('vids')">
-                {{ __('Video Library') }}
+                {{ __('Videók megtekintése') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('events')" :active="request()->routeIs('reports')">
-                {{ __('Events') }}
+                {{ __('Események megtekintése') }}
             </x-responsive-nav-link>
         </div>
 
@@ -101,7 +101,7 @@
                     <x-responsive-nav-link :href="route('logout')"
                             onclick="event.preventDefault();
                                         this.closest('form').submit();">
-                        {{ __('Log Out') }}
+                        {{ __('Kijelentkezés') }}
                     </x-responsive-nav-link>
                 </form>
             </div>
