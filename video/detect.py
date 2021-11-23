@@ -8,6 +8,7 @@ import subprocess
 
 import argparse
 import os
+import signal
 import sys
 from pathlib import Path
 
@@ -49,6 +50,10 @@ mydb = mysql.connector.connect(
   password="laravel",
   database="laravel"
 )
+proc1 = None
+proc2 = None
+videoID = "0"
+
 
 mycursor = mydb.cursor()
 #mysql connector definíció vége
@@ -63,17 +68,13 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         imgsz=640,  # inference size (pixels)
         conf_thres=0.25,  # confidence threshold
         iou_thres=0.45,  # NMS IOU threshold
-        max_det=1000,  # maximum detections per image
         device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
-        stream_img=False,  # show results
-        save_video=False,  # save results to *.txt
-        save_conf=False,  # save confidences in --save-txt labels
-        nosave=False,  # do not save images/videos
+        stream_img=True,  # stream and show results
+        save_video=True,  # save results to video
         classes=None,  # filter by class: --class 0, or --class 0 2 3
         agnostic_nms=False,  # class-agnostic NMS
         augment=False,  # augmented inference
         visualize=False,  # visualize features
-        update=False,  # update all models
         project=ROOT / 'runs/detect',  # save results to project/name
         name='exp',  # save results to project/name
         exist_ok=False,  # existing project/name ok, do not increment
@@ -82,6 +83,8 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         hide_conf=False,  # hide confidences
         half=True,  # use FP16 half-precision inference
         ):
+    global proc1
+    global proc2
     #forrásvizsgálat, hogy videó-e vagy stream
     source = str(source)
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
@@ -107,7 +110,12 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
     names = model.module.names if hasattr(model, 'module') else model.names  # Osztályok neveinek eltárolása
     if half:
         model.half()  # to FP16
-    imgsz = check_img_size(imgsz, s=stride)  # check image size
+    model2 = attempt_load("./yolov5m.pt", map_location=device)
+    stride2 = int(model2.stride.max())  # model stride
+    names2 = model2.module.names if hasattr(model, 'module') else model2.names  # Osztályok neveinek eltárolása
+    if half:
+        model2.half()  # to FP16
+    imgsz = check_img_size(imgsz, s=stride2)  # check image size
 
     # Dataloader, itt tölti be a videókat/streamet képkockákba
     if webcam:
@@ -129,34 +137,22 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     #ffmpeg plugin indítási paraméterei
-    command = ['ffmpeg',
-            '-re',
-           '-y',
-           '-f', 'rawvideo',
-           '-pix_fmt', 'bgr24',
-           '-s', "{}x{}".format(str(width), str(height)),
-           '-r', str(fps),
-           '-i', '-',
-           '-tune', 'zerolatency',
-           '-crf', '18',
-           '-vcodec', 'libx264',
-           '-pix_fmt', 'yuv420p',
-           '-f', 'flv',
-           rtmp_url]
-    #ffmpeg plugin indítása
-    proc1 = subprocess.Popen(command, stdin=subprocess.PIPE)
+
 
 
 
 
     #sql
-    start_time = datetime.datetime.now() # a videó kezdeti időpontja
-    start_localtime = time.localtime()
-    sql = "INSERT INTO videos (videoName,videoDate,videoURL,videoAvailable) VALUES (%s,%s,%s, %s)" # SQL insert kérés
-    val = (time.strftime("%Y%m%d%H%M%S", start_localtime)+source, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),'not ready', 0)
-    mycursor.execute(sql, val) # SQL kérés végrehajtása
-    mydb.commit() # SQL kérés lezárása
-    videoID=mycursor.lastrowid;# Az éppen mentendő videó ID-ja
+    if save_video:
+        global videoID
+        start_time = datetime.datetime.now() # a videó kezdeti időpontja
+        start_localtime = time.localtime()
+        sql = "INSERT INTO videos (videoName,videoDate,videoURL,videoAvailable) VALUES (%s,%s,%s, %s)" # SQL insert kérés
+        val = (time.strftime("%Y%m%d%H%M%S", start_localtime)+source, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),'not ready', 0)
+        mycursor.execute(sql, val) # SQL kérés végrehajtása
+        mydb.commit() # SQL kérés lezárása
+        videoID=mycursor.lastrowid;# Az éppen mentendő videó ID-ja
+        save_path = str(save_dir) +"/"+time.strftime("%Y%m%d%H%M%S", start_localtime)+".mp4"
     #változók beállítása
     predictionList = np.zeros((4,10,4)) #az észleléseket tároló vektor
     #(4 képkockán max 10 észlelés, minden észleléshez tartozik 4 adat, x,y koordináta egy prediction ID, ami összeköti az észleléseket és egy frame number, hogy hány képkockán keresztül tartott az esemény)
@@ -165,7 +161,9 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
     frameNum = 0 
     # a hálózat alkalmazása a képkockákon
     if device.type != 'cpu':
+        model2(torch.zeros(1, 3, *imgsz).to(device).type_as(next(model.parameters())))  # run once
         model(torch.zeros(1, 3, *imgsz).to(device).type_as(next(model.parameters())))  # run once
+
     for path, img, im0s, vid_cap, s in dataset:
 
         frameCounter += 1
@@ -186,9 +184,11 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         # A hálózatba betáplált képkocka végigfuttatása
         visualize = increment_path(save_dir / Path(path).stem, mkdir=True) if visualize else False
         pred = model(img, augment=augment, visualize=visualize)[0]
+        #pred2 = model2(img, augment=augment, visualize=visualize)[0]
 
         # Nem-maximum vágás (aktiváció)
-        pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
+        pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=10)
+        #pred2 = non_max_suppression(pred2, conf_thres, iou_thres, 0, agnostic_nms, max_det=10)
         # A megtalált becslések feldolgozása
         for i, det in enumerate(pred):  # per image
             if webcam:  # batch_size >= 1
@@ -196,9 +196,8 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                 s += f'{i}: '
             else:
                 p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
-
             p = Path(p)  # to Path
-            save_path = str(save_dir / p.name)
+            #save_path = str(save_dir / p.name)
             s += '%gx%g ' % img.shape[2:]  # kiíró string(debug)
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             annotator = Annotator(im0, line_width=line_thickness, example=str(names))
@@ -220,12 +219,11 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         predictionID += 1 #predictionID növelése, ha már van egy prediction úgyis átvált arra
                         detectionCounter+=1 #detektálás számláló növelése(hogy max 10 detektálás legyen)
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                        line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
                         clss = cls.clone().detach().view(1).tolist()
                         current_time = time.localtime() #időpont elmentése
                         distance=0.11   #maximum távolság, ami még 1 észlelésnek nevezhető(pixel)
                         predID=predictionID
-
+                        
                         #végignézzük, hogy található-e már észlelés, ha igen akkor elmentjük a predID-jét és a framenum-ot megnöveljük 1-el
                         frameRepeatCounter=0
                         if frameCounter > 4 :
@@ -258,13 +256,13 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                             #ha 3 vagy több frame volt akkor már van sql bejegyzés, azt módosítjuk
                             if frameNum>3:
                                 sql = "UPDATE events SET classid=%s,time=%s,frames=%s,videoID=%s,level=%s,predID=%s WHERE videoID = %s AND PredID= %s"
-                                val = (int(clss[0]), time.strftime("%Y-%m-\%d %H:%M:%S", current_time),frameNum, videoID,0, predID,videoID,predID)
+                                val = (int(clss[0]), time.strftime("%Y-%m-\%d %H:%M:%S", current_time),frameNum, videoID,1, predID,videoID,predID)
                                 mycursor.execute(sql, val)
                                 mydb.commit()
                             #hozunk létre új SQL bejegyzést ha még csak 3x volt
                             else:
                                 sql = "INSERT INTO events (classid,time,frames,videoID,level,predID) VALUES (%s, %s,%s, %s,%s, %s)"
-                                val = (int(clss[0]), time.strftime("%Y-%m-\%d %H:%M:%S", current_time),frameNum, videoID,0, predID)
+                                val = (int(clss[0]), time.strftime("%Y-%m-\%d %H:%M:%S", current_time),frameNum, videoID,1, predID)
                                 mycursor.execute(sql, val)
                                 mydb.commit()
 
@@ -273,38 +271,122 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         c = int(cls)  # integer class
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
+
+
+
+            #emberek megtalálása
+            ''' det2 = pred2[0]
+            if len(det2):
+                # A befoglaló geometriák átméretezése img_sizeról im0 sizera
+                det2[:, :4] = scale_coords(img.shape[2:], det2[:, :4], im0.shape).round()
+
+                # Az eredmények kiírása(debug)
+                for c in det2[:, -1].unique():
+                    n = (det2[:, -1] == c).sum()  # detections per class
+                    s += f"{n} {names2[int(c)]}{'s' * (n > 1)}, "  # add to string
+                # Az eredmények kiítása
+                detectionCounter = 0
+                for *xyxy, conf, cls in reversed(det2):
+                    xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                    exist = False
+                    #Ha még nincs 4 frame akkor csak feltöltés következik
+                    if frameCounter>4 :
+                        for k in predictionList[3]:
+                            print(str(xywh[0]) + " "+ str(k[0]) +" "+  str(xywh[2]+xywh[0])  +" "+  str(xywh[1])+" "+   str(k[1]) +" "+ str(xywh[3]+xywh[1]))
+                            if(xywh[0] < k[0] and k[0] < xywh[2]+xywh[0] and xywh[1] < k[1] and k[1] < xywh[3]+xywh[1]):
+                                print(str(xywh[0]) + " "+ str(k[0]) +" "+  str(xywh[2])  +" "+  str(xywh[1])+" "+   str(k[1]) +" "+ str(xywh[3]))
+                                exist = True;
+
+
+                    if stream_img:  # Add bbox to image(befoglaló geometria képre mentése)
+                        c = int(cls)  # integer class
+                        label2 = None if hide_labels else (names2[c] if hide_conf else f'{names2[c]} {conf:.2f}')
+                        annotator.box_label(xyxy, label2, color=colors(c, True))
  
+            
+            ''' 
+
             # Print completed inference(debug only)
             LOGGER.info(f'{s}Done.')
+
+
 
             # Eredmények közvetítése
             im0 = annotator.result()
             if stream_img:
+                if proc1 == None:
+                    if vid_cap:  # video
+                        fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                        w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                        h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    else:  # stream
+                        fps, w, h = 30, im0.shape[1], im0.shape[0]
+                    command = ['ffmpeg',
+                            '-re',
+                        '-y',
+                        '-f', 'rawvideo',
+                        '-pix_fmt', 'bgr24',
+                        '-s', "{}x{}".format(str(w), str(h)),
+                        '-r', str(fps),
+                        '-i', '-',
+                        '-tune', 'zerolatency',
+                        '-crf', '18',
+                        '-vcodec', 'libx264',
+                        '-pix_fmt', 'yuv420p',
+                        '-f', 'flv',
+                        rtmp_url]
+                    #ffmpeg plugin indítása
+                    proc1 = subprocess.Popen(command, stdin=subprocess.PIPE)
                 cv2.imshow(str(p), im0)
                 proc1.stdin.write(im0.tobytes())
                 cv2.waitKey(1)  # vár 1 millisecond
             
-            # Videó mentése
-            if vid_path[i] != save_path:  # new video
-                vid_path[i] = save_path
-                if isinstance(vid_writer[i], cv2.VideoWriter):
-                    vid_writer[i].release()  # release previous video writer
-                if vid_cap:  # video
-                    fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                    w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                    h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                else:  # stream
-                    fps, w, h = 30, im0.shape[1], im0.shape[0]
-                vid_writer[i] = cv2.VideoWriter(save_path + '.mp4', cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
-            vid_writer[i].write(im0)
-        #ha legalább 1 órája megy a videó zárja le a fájlt, mentse el SQL-ben, és írjon új videót
-        time_spent= datetime.datetime.now()-start_time
-        if time_spent.total_minutes() > 60:
-            sql = "UPDATE videos SET videoURL=%s, videoAvailable=%s WHERE id=%s"
-            val = (save_dir+"/"+time.strftime("%Y%m%d%H%M%S", start_localtime)+source+".webm", 1, videoID)
-            mycursor.execute(sql, val)
-            mydb.commit()
-            vid_writer[i].release()
-            subprocess.Popen("ffmpeg -i "+ save_path + ".mp4 -c:v libvpx-vp9 -crf 30 -b:v 0 "+ save_dir+"/"+time.strftime("%Y%m%d%H%M%S", start_localtime)+source+".webm")
-            start_localtime = time.localtime()
-            break
+            #videó mentése
+            if save_video:
+                #ha a videómentő nem fut indítsa el
+                if proc2 == None:
+                    if vid_cap:  # video
+                        fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                        w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                        h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    else:  # stream
+                        fps, w, h = 30, im0.shape[1], im0.shape[0]
+                    command2 = ['ffmpeg',
+                        '-re',
+                        '-y',
+                        '-f', 'rawvideo',
+                        '-pix_fmt', 'bgr24',
+                        '-s', "{}x{}".format(str(w), str(h)),
+                        '-r', str(fps),
+                        '-i', '-',
+                        '-tune', 'zerolatency',
+                        '-crf', '18',
+                        '-vcodec', 'libx264',
+                        '-pix_fmt', 'yuv420p',
+                        str(save_path)]
+                    proc2 = subprocess.Popen(command2, stdin=subprocess.PIPE)
+                else: 
+                    #videó mentése
+                    proc2.stdin.write(im0.tobytes())
+            
+                time_spent= datetime.datetime.now()-start_time
+                #ha legalább 1 órája megy a videó zárja le a fájlt, mentse el SQL-ben, és írjon új videót
+                if time_spent.total_seconds() >= 60*60:
+                    sql = "UPDATE videos SET videoURL=%s, videoAvailable=%s WHERE id=%s"
+                    val = (save_path, 1, videoID)
+                    mycursor.execute(sql, val)
+                    mydb.commit()
+                    #új videó definiálása
+                    start_localtime = time.localtime()
+                    save_path = str(save_dir) +"/"+time.strftime("%Y%m%d%H%M%S", start_localtime)+".mp4"
+                    sql = "INSERT INTO videos (videoName,videoDate,videoURL,videoAvailable) VALUES (%s,%s,%s, %s)" # SQL insert kérés
+                    val = (time.strftime("%Y%m%d%H%M%S", start_localtime)+source, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),'not ready', 0)
+                    mycursor.execute(sql, val) # SQL kérés végrehajtása
+                    mydb.commit() # SQL kérés lezárása
+                    videoID=mycursor.lastrowid;# Az éppen mentendő videó ID-ja
+                    #videówriter kill
+                    proc2.terminate()
+                    proc2 = None
+                    start_time = datetime.datetime.now() # a videó kezdeti időpontja
+
+
