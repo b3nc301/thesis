@@ -1,14 +1,16 @@
-# thesis
-
+# Thesis
+This repo is for my thesis work.
+This software is a mask and social distancing detector with YOLO algorithm and Laravel web interface
 ## Requiments
-- Docker(?)
+-Detector
+  - Yolo v5 detector (https://github.com/b3nc301/yolov5 fork)
+  -python pip - websocket, asyncio, mysql-connector-python
 - Web
-  - Django
-  - MySQL/MariaDB
-  -python - requests, websocket, asyncio, mysql-connector-python, python-ffmpeg-video-streaming
+  - PHP
+  - MySQL
+  -python - websocket, asyncio, mysql-connector-python
 
 
-https://github.com/ossrs/srs
 
 libnginx-mod-rtmp
 https://hlsbook.net/hls-nginx-rtmp-module/
