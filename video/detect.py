@@ -4,6 +4,8 @@
 import time
 import datetime
 import subprocess
+import math
+
 
 
 import argparse
@@ -128,20 +130,6 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         bs = 1  # batch_size
     vid_path, vid_writer = [None] * bs, [None] * bs
 
-   #a továbbstreamelés szempontjából lényeges változók
-    if webcam:  # video
-        fps, width, height = 15, imgsz[0], imgsz[1]
-    else:  # stream
-        cap=cv2.VideoCapture(source)
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    #ffmpeg plugin indítási paraméterei
-
-
-
-
-
     #sql
     if save_video:
         global videoID
@@ -154,7 +142,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         videoID=mycursor.lastrowid;# Az éppen mentendő videó ID-ja
         save_path = str(save_dir) +"/"+time.strftime("%Y%m%d%H%M%S", start_localtime)+".mp4"
     #változók beállítása
-    predictionList = np.zeros((4,10,4)) #az észleléseket tároló vektor
+    predictionList = np.zeros((4,10,5)) #az észleléseket tároló vektor
     #(4 képkockán max 10 észlelés, minden észleléshez tartozik 4 adat, x,y koordináta egy prediction ID, ami összeköti az észleléseket és egy frame number, hogy hány képkockán keresztül tartott az esemény)
     frameCounter = 0 #képkocka számláló 
     predictionID=0
@@ -167,12 +155,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
     for path, img, im0s, vid_cap, s in dataset:
 
         frameCounter += 1
-        #észlelések elmozgatása 1 képkockával az észleléseket tartalmazó vektorban
-        if(frameCounter >= 4):
-            predictionList[0]=predictionList[1]
-            predictionList[1]=predictionList[2]
-            predictionList[2]=predictionList[3]
-            predictionList[3]=np.zeros((10,4))
+
         #A képek betöltése és átalakítása
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -184,11 +167,11 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         # A hálózatba betáplált képkocka végigfuttatása
         visualize = increment_path(save_dir / Path(path).stem, mkdir=True) if visualize else False
         pred = model(img, augment=augment, visualize=visualize)[0]
-        #pred2 = model2(img, augment=augment, visualize=visualize)[0]
+        pred2 = model2(img, augment=augment, visualize=visualize)[0]
 
         # Nem-maximum vágás (aktiváció)
         pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=10)
-        #pred2 = non_max_suppression(pred2, conf_thres, iou_thres, 0, agnostic_nms, max_det=10)
+        pred2 = non_max_suppression(pred2, conf_thres, iou_thres, 0, agnostic_nms, max_det=10)
         # A megtalált becslések feldolgozása
         for i, det in enumerate(pred):  # per image
             if webcam:  # batch_size >= 1
@@ -201,6 +184,9 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
             s += '%gx%g ' % img.shape[2:]  # kiíró string(debug)
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             annotator = Annotator(im0, line_width=line_thickness, example=str(names))
+
+
+
             #Detektálások feldolgozása 
             if len(det):
                 # A befoglaló geometriák átméretezése img_sizeról im0 sizera
@@ -210,69 +196,63 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                 for c in det[:, -1].unique():
                     n = (det[:, -1] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
+                #észlelések elmozgatása 1 képkockával az észleléseket tartalmazó vektorban
+                if(frameCounter >= 4):
+                    predictionList[0]=predictionList[1]
+                    predictionList[1]=predictionList[2]
+                    predictionList[2]=predictionList[3]
+                    predictionList[3]=np.zeros((10,5))
 
-                # Az eredmények kiítása
+
+
+
+                # Az eredmények összegyűjtése
                 detectionCounter = 0
                 for *xyxy, conf, cls in reversed(det):
-
-                    if int(cls)!=1 :  # SQL-be mentés
-                        predictionID += 1 #predictionID növelése, ha már van egy prediction úgyis átvált arra
-                        detectionCounter+=1 #detektálás számláló növelése(hogy max 10 detektálás legyen)
-                        xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                        clss = cls.clone().detach().view(1).tolist()
-                        current_time = time.localtime() #időpont elmentése
-                        distance=0.11   #maximum távolság, ami még 1 észlelésnek nevezhető(pixel)
-                        predID=predictionID
-                        
-                        #végignézzük, hogy található-e már észlelés, ha igen akkor elmentjük a predID-jét és a framenum-ot megnöveljük 1-el
-                        frameRepeatCounter=0
-                        if frameCounter > 4 :
-                            for j in range(0,3):
-                                for k in predictionList[j]:
-                                    if(k[0]!=0 and k[1]!=0):
-                                        if(abs(k[0]-xywh[0])<=distance and abs(k[1]-xywh[1])<=distance):
-                                            frameRepeatCounter+=1
-                                            predID = k[2]
-                                            frameNum=k[3]+1
-                        #Ha még nincs 4 frame akkor csak feltöltés következik
-                        if frameCounter<4 :
-                            if detectionCounter<10 :
-                                predictionList[frameCounter][detectionCounter][0] = xywh[0]
-                                predictionList[frameCounter][detectionCounter][1] = xywh[1]
-                                predictionList[frameCounter][detectionCounter][2] = predID
-                                predictionList[frameCounter][detectionCounter][3] = frameNum
-                        #Ha van már 4 frame akkor csak az utolsó képkocka adatainak feltöltése zajlik
-                        else:
-                            if detectionCounter<10 :
-                                predictionList[3][detectionCounter][0] = xywh[0]
-                                predictionList[3][detectionCounter][1] = xywh[1]
-                                predictionList[3][detectionCounter][2] = predID
-                                predictionList[3][detectionCounter][3] = frameNum
-                        #ha volt prediction akkor predictionID-t csökkentsük, hogy ne nőljön feleslegesen
-                        if(frameRepeatCounter>=1):
-                            predictionID-=1
-                        #ha legalább 3 frame volt akkor
-                        if(frameRepeatCounter >=3):
-                            #ha 3 vagy több frame volt akkor már van sql bejegyzés, azt módosítjuk
-                            if frameNum>3:
-                                sql = "UPDATE events SET classid=%s,time=%s,frames=%s,videoID=%s,level=%s,predID=%s WHERE videoID = %s AND PredID= %s"
-                                val = (int(clss[0]), time.strftime("%Y-%m-\%d %H:%M:%S", current_time),frameNum, videoID,1, predID,videoID,predID)
-                                mycursor.execute(sql, val)
-                                mydb.commit()
-                            #hozunk létre új SQL bejegyzést ha még csak 3x volt
-                            else:
-                                sql = "INSERT INTO events (classid,time,frames,videoID,level,predID) VALUES (%s, %s,%s, %s,%s, %s)"
-                                val = (int(clss[0]), time.strftime("%Y-%m-\%d %H:%M:%S", current_time),frameNum, videoID,1, predID)
-                                mycursor.execute(sql, val)
-                                mydb.commit()
-
-
-                    if stream_img:  # Add bbox to image(befoglaló geometria képre mentése)
+                    #Ha még nincs 4 frame akkor csak feltöltés következik
+                    if frameCounter<4 :
+                        if detectionCounter<10 :
+                            predictionList[frameCounter][detectionCounter][0] = xyxy[0]
+                            predictionList[frameCounter][detectionCounter][1] = xyxy[1]
+                            predictionList[frameCounter][detectionCounter][2] = -1
+                            predictionList[frameCounter][detectionCounter][3] = 1
+                            predictionList[frameCounter][detectionCounter][4] = int(cls)
+                    #Ha van már 4 frame akkor csak az utolsó képkocka adatainak feltöltése zajlik
+                    else:
+                        if detectionCounter<10 :
+                            predictionList[3][detectionCounter][0] = xyxy[0]
+                            predictionList[3][detectionCounter][1] = xyxy[1]
+                            predictionList[3][detectionCounter][2] = -1
+                            predictionList[3][detectionCounter][3] = 1
+                            predictionList[3][detectionCounter][4] = int(cls)
+                    detectionCounter+=1 #detektálás számláló növelése(hogy max 10 detektálás legyen)
+                distance = 30              
+                if stream_img:  #(befoglaló geometria képre mentése)
                         c = int(cls)  # integer class
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
-
-
+                if frameCounter > 4 :
+                    if(curr[0]!=0 and curr[1]!=0 ):
+                        for j in range(0,3):
+                            for k in predictionList[j]:
+                                if(math.sqrt(math.pow((curr[0]-k[0]),2) + math.pow((curr[1]-k[1]),2))<=distance and (curr[4] != 1)):
+                                    curr[3]=k[3]+1
+                                    if(k[2] == -1):
+                                        k[2] = predictionID
+                                        curr[2] = predictionID
+                                        predictionID+=1
+                                    else:
+                                        curr[2]=k[2]
+                    if(curr[3]>3):
+                        sql = "UPDATE events SET classid=%s,frames=%s,videoID=%s,level=%s,predID=%s WHERE videoID = %s AND PredID= %s"
+                        val = (curr[4],curr[3], videoID,1, curr[2],videoID,curr[2])
+                        mycursor.execute(sql, val)
+                        mydb.commit()
+                    elif(curr[3]==3):
+                        sql = "INSERT INTO events (classid,time,frames,videoID,level,predID) VALUES (%s, %s,%s, %s,%s, %s)"
+                        val = (curr[4], time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),curr[3], videoID,1, curr[2])
+                        mycursor.execute(sql, val)
+                        mydb.commit()                                  
             centers = []
             #emberek megtalálása
             det2 = pred2[0]
@@ -285,44 +265,64 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                     n = (det2[:, -1] == c).sum()  # detections per class
                     s += f"{n} {names2[int(c)]}{'s' * (n > 1)}, "  # add to string
                 # Az eredmények kiítása
-                detectionCounter = 0
                 for *xyxy, conf, cls in reversed(det2):
-                    xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                    '''
-                    exist = False
-                    #Ha még nincs 4 frame akkor csak feltöltés következik
+                    mask=False
+                    predID=None
                     if frameCounter>4 :
                         for k in predictionList[3]:
-                            print(str(xywh[0]) + " "+ str(k[0]) +" "+  str(xywh[2]+xywh[0])  +" "+  str(xywh[1])+" "+   str(k[1]) +" "+ str(xywh[3]+xywh[1]))
-                            if(xywh[0] < k[0] and k[0] < xywh[2]+xywh[0] and xywh[1] < k[1] and k[1] < xywh[3]+xywh[1]):
-                                print(str(xywh[0]) + " "+ str(k[0]) +" "+  str(xywh[2])  +" "+  str(xywh[1])+" "+   str(k[1]) +" "+ str(xywh[3]))
-                                exist = True;
-                    '''
-                    
-                    center=[xywh[0]+(xywh[2]/2) , xywh[1]+xywh[3]]
-                    centers.append(center)
+                            if(xyxy[0]<k[0] and xyxy[2] > k[0] and xyxy[1] < k[1] and xyxy[3] > k[1]):
+                                mask = True
+                                predID = k[2]
+                                frameNum = k[3]
 
-                    if stream_img:  # Add bbox to image(befoglaló geometria képre mentése)
+                    center=[(xyxy[0]+xyxy[2])/2, xyxy[3], (0,255,0), mask, predID]
+                    centers.append(center)
+                    setdist=300
+
+
+                    if stream_img:  #(befoglaló geometria képre mentése)
                         c = int(cls)  # integer class
                         label2 = None if hide_labels else (names2[c] if hide_conf else f'{names2[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label2, color=colors(c, True))
+            violated= []
             for c in centers:
                 for c1 in centers:
-                    dist = math.sqrt(math.pow(c1[0]-c[0],2) + math.pow(c1[1]-c[1],2))
-                    if(dist<setdist)
+                    dist = math.sqrt(math.pow((c1[0]-c[0]),2) + math.pow((c1[1]-c[1]),2))
+                    if(dist<setdist and c != c1):
                         # távolságon belül vannak, sql művelet, és maszkvizsgálat kell
-            
-             
+                        c1[2] = (0,0,255)
+                        c[2] = (0,0,255)
+                        if c not in violated:
+                            violated.append(c)
+                        if c1 not in violated:
+                            violated.append(c1)
+
+            ''' violatedPrediction = False
+            for v in violated:
+                for p in predictionList[3]:
+                    if v[3] == p[2]:
+                        if p[2] != -1:
+                            violatedPrediction = True
+                            if(p[3]>=3):
+                                sql = "UPDATE events SET classid=%s,frames=%s,videoID=%s,level=%s,predID=%s WHERE videoID = %s AND PredID= %s"
+                                val = (p[4],p[3], videoID,4, p[2],videoID,p[2])
+                                mycursor.execute(sql, val)
+                                mydb.commit()
+                    if(not violatedPrediction):
+            '''
+
+                        
 
             # Print completed inference(debug only)
             LOGGER.info(f'{s}Done.')
 
 
 
-            # Eredmények közvetítése
+            # Eredmények rajzolása
             im0 = annotator.result()
             for c in centers:
-                cv2.circle(im0, (int(c[0]),int(c[1])), 3, RED, -1,cv2.LINE_AA)
+                cv2.circle(im0, (int(c[0]),int(c[1])), 3, c[2], 3)
+            #eredmények közvetítése
             if stream_img:
                 if proc1 == None:
                     if vid_cap:  # video
