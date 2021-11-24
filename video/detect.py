@@ -273,9 +273,9 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         annotator.box_label(xyxy, label, color=colors(c, True))
 
 
-
+            centers = []
             #emberek megtalálása
-            ''' det2 = pred2[0]
+            det2 = pred2[0]
             if len(det2):
                 # A befoglaló geometriák átméretezése img_sizeról im0 sizera
                 det2[:, :4] = scale_coords(img.shape[2:], det2[:, :4], im0.shape).round()
@@ -288,6 +288,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                 detectionCounter = 0
                 for *xyxy, conf, cls in reversed(det2):
                     xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                    '''
                     exist = False
                     #Ha még nincs 4 frame akkor csak feltöltés következik
                     if frameCounter>4 :
@@ -296,15 +297,22 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                             if(xywh[0] < k[0] and k[0] < xywh[2]+xywh[0] and xywh[1] < k[1] and k[1] < xywh[3]+xywh[1]):
                                 print(str(xywh[0]) + " "+ str(k[0]) +" "+  str(xywh[2])  +" "+  str(xywh[1])+" "+   str(k[1]) +" "+ str(xywh[3]))
                                 exist = True;
-
+                    '''
+                    
+                    center=[xywh[0]+(xywh[2]/2) , xywh[1]+xywh[3]]
+                    centers.append(center)
 
                     if stream_img:  # Add bbox to image(befoglaló geometria képre mentése)
                         c = int(cls)  # integer class
                         label2 = None if hide_labels else (names2[c] if hide_conf else f'{names2[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label2, color=colors(c, True))
- 
+            for c in centers:
+                for c1 in centers:
+                    dist = math.sqrt(math.pow(c1[0]-c[0],2) + math.pow(c1[1]-c[1],2))
+                    if(dist<setdist)
+                        # távolságon belül vannak, sql művelet, és maszkvizsgálat kell
             
-            ''' 
+             
 
             # Print completed inference(debug only)
             LOGGER.info(f'{s}Done.')
@@ -313,6 +321,8 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
             # Eredmények közvetítése
             im0 = annotator.result()
+            for c in centers:
+                cv2.circle(im0, (int(c[0]),int(c[1])), 3, RED, -1,cv2.LINE_AA)
             if stream_img:
                 if proc1 == None:
                     if vid_cap:  # video
