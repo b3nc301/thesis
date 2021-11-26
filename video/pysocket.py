@@ -6,7 +6,7 @@ import time
 
 #változók feltöltése
 originalData = {"src":"rtsp://localhost/camera",
-"conf":"0.7",
+"conf":"0.25",
 "min":"1.5"}
 proc = None
 
@@ -34,7 +34,7 @@ async def setup(websocket, path):
                     await websocket.send(json.dumps({"status":"fail","proc":"start"}))
                 #összeállítjuk az új adatszerkezetet a meglévő és új paraméterekből
                 data = {**data, **receivedData}
-                prep = data["src"]  + data["conf"]  + data["min"]
+                prep = "--src" + data["src"] +"--conf-thres" + data["conf"]  + "--min" + data["min"]
                 #ha nincs futó process akkor elindul
                 if proc is None:
                     proc = subprocess.Popen(["python3", "backend.py", prep])
@@ -61,7 +61,7 @@ async def setup(websocket, path):
                 #ha van futó process akkor leállítjuk és elindítjuk újra
                 if proc is not None:
                     if proc.poll() is None:
-                        prep = data["src"] + data["conf"] + data["min"]
+                        prep = "--src" + data["src"] +"--conf-thres" + data["conf"]  + "--min" + data["min"]
                         proc.terminate()
                         roc = subprocess.Popen(["python3", "backend.py", prep])
                         if proc.poll() is not None:

@@ -57,12 +57,44 @@ proc2 = None
 videoID = "0"
 
 
+
+# https://deepnote.com/@deepnote/A-social-distancing-detector-using-a-Tensorflow-object-detection-model-Python-and-OpenCV-KBcEvWejRjGyjy2YnxiP5Q
+def compute_perspective_transform(corner_points,width,height,image):
+	""" Compute the transformation matrix
+	@ corner_points : 4 corner points selected from the image
+	@ height, width : size of the image
+	return : transformation matrix and the transformed image
+	"""
+	# Create an array out of the 4 corner points
+	corner_points_array = np.float32(corner_points)
+	# Create an array with the parameters (the dimensions) required to build the matrix
+	img_params = np.float32([[0,0],[width,0],[0,height],[width,height]])
+	# Compute and return the transformation matrix
+	matrix = cv2.getPerspectiveTransform(corner_points_array,img_params) 
+	img_transformed = cv2.warpPerspective(image,matrix,(width,height))
+	return matrix,img_transformed
+
+
+def compute_point_perspective_transformation(matrix,list_downoids):
+	""" Apply the perspective transformation to every ground point which have been detected on the main frame.
+	@ matrix : the 3x3 matrix 
+	@ list_downoids : list that contains the points to transform
+	return : list containing all the new points
+	"""
+	# Compute the new coordinates of our points
+	list_points_to_detect = np.float32(list_downoids).reshape(-1, 1, 2)
+	transformed_points = cv2.perspectiveTransform(list_points_to_detect, matrix)
+	# Loop over the points and add them to the list that will be returned
+	transformed_points_list = list()
+	for i in range(0,transformed_points.shape[0]):
+		transformed_points_list.append([transformed_points[i][0][0],transformed_points[i][0][1]])
+	return transformed_points_list
+
 mycursor = mydb.cursor()
 #mysql connector definíció vége
 
 #RTMP stream URL
 rtmp_url = "rtmp://localhost:1935/live/stream"
-
 #alap futó függvüny
 @torch.no_grad()
 def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
@@ -256,6 +288,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                             mycursor.execute(sql, val)
                             mydb.commit()                                  
             centers = []
+            centercoords=[]
             #emberek megtalálása
             det2 = pred2[0]
             if len(det2):
@@ -278,6 +311,8 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                                 frameNum = k[3]
 
                     center=[(xyxy[0]+xyxy[2])/2, xyxy[3], (0,255,0), mask, predID]
+                    centerCoord=[(xyxy[0]+xyxy[2])/2, xyxy[3]]
+                    centercoords.append(centerCoord)
                     centers.append(center)
                     setdist=300
 
@@ -286,6 +321,44 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         c = int(cls)  # integer class
                         label2 = None if hide_labels else (names2[c] if hide_conf else f'{names2[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label2, color=colors(c, True))
+        
+            
+            
+            import yaml
+
+            ######################################### 
+            # Load the config for the top-down view #
+            #########################################
+            print("[ Loading config file for the bird view transformation ] ")
+            with open("../demos/config_birdview.yml", "r") as ymlfile:
+                cfg = yaml.load(ymlfile)
+            width_og, height_og = 0,0
+            corner_points = []
+            for section in cfg:
+                corner_points.append(cfg["image_parameters"]["p1"])
+                corner_points.append(cfg["image_parameters"]["p2"])
+                corner_points.append(cfg["image_parameters"]["p3"])
+                corner_points.append(cfg["image_parameters"]["p4"])
+                width_og = int(cfg["image_parameters"]["width_og"])
+                height_og = int(cfg["image_parameters"]["height_og"])
+                img_path = cfg["image_parameters"]["img_path"]
+                size_frame = cfg["image_parameters"]["size_frame"]
+            print(" Done : [ Config file loaded ] ...")
+
+            matrix,imgOutput = compute_perspective_transform(corner_points,width_og,height_og,im0)
+            height,width,_ = imgOutput.shape
+            blank_image = np.zeros((height,width,3), np.uint8)
+            height = blank_image.shape[0]
+            width = blank_image.shape[1] 
+            dim = (width, height)
+            bird_view_img = cv2.resize(im0, dim, interpolation = cv2.INTER_AREA)
+            cv2.imshow("asd", bird_view_img)
+
+            
+            
+            
+            
+            
             violated= []
             for c in centers:
                 for c1 in centers:
@@ -402,3 +475,25 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                     start_time = datetime.datetime.now() # a videó kezdeti időpontja
 
 
+
+
+
+
+def parse_opt():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir/URL/glob, 0 for webcam')
+    parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
+    parser.add_argument('--min', type=float, default=0.45, help='Minimum distance')
+    opt = parser.parse_args()
+    opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
+    print_args(FILE.stem, opt)
+    return opt
+
+
+def main(opt):
+    run(**vars(opt))
+
+
+if __name__ == "__main__":
+    opt = parse_opt()
+    main(opt)
