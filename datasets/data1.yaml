@@ -1,4 +1,0 @@
-train: ../datasets/data1/train
-val: ../datasets/data1/valid
-nc: 3
-names: ['mask_weared_incorrect','with_mask', 'without_mask']

@@ -226,33 +226,35 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                             predictionList[3][detectionCounter][3] = 1
                             predictionList[3][detectionCounter][4] = int(cls)
                     detectionCounter+=1 #detektálás számláló növelése(hogy max 10 detektálás legyen)
+                    if stream_img:  #(befoglaló geometria képre mentése)
+                            c = int(cls)  # integer class
+                            label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
+                            annotator.box_label(xyxy, label, color=colors(c, True))
                 distance = 30              
-                if stream_img:  #(befoglaló geometria képre mentése)
-                        c = int(cls)  # integer class
-                        label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
-                        annotator.box_label(xyxy, label, color=colors(c, True))
+
                 if frameCounter > 4 :
-                    if(curr[0]!=0 and curr[1]!=0 ):
-                        for j in range(0,3):
-                            for k in predictionList[j]:
-                                if(math.sqrt(math.pow((curr[0]-k[0]),2) + math.pow((curr[1]-k[1]),2))<=distance and (curr[4] != 1)):
-                                    curr[3]=k[3]+1
-                                    if(k[2] == -1):
-                                        k[2] = predictionID
-                                        curr[2] = predictionID
-                                        predictionID+=1
-                                    else:
-                                        curr[2]=k[2]
-                    if(curr[3]>3):
-                        sql = "UPDATE events SET classid=%s,frames=%s,videoID=%s,level=%s,predID=%s WHERE videoID = %s AND PredID= %s"
-                        val = (curr[4],curr[3], videoID,1, curr[2],videoID,curr[2])
-                        mycursor.execute(sql, val)
-                        mydb.commit()
-                    elif(curr[3]==3):
-                        sql = "INSERT INTO events (classid,time,frames,videoID,level,predID) VALUES (%s, %s,%s, %s,%s, %s)"
-                        val = (curr[4], time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),curr[3], videoID,1, curr[2])
-                        mycursor.execute(sql, val)
-                        mydb.commit()                                  
+                    for curr in predictionList[3]:
+                        if(curr[0]!=0 and curr[1]!=0 ):
+                            for j in range(0,3):
+                                for k in predictionList[j]:
+                                    if(math.sqrt(math.pow((curr[0]-k[0]),2) + math.pow((curr[1]-k[1]),2))<=distance and (curr[4] != 1)):
+                                        curr[3]=k[3]+1
+                                        if(k[2] == -1):
+                                            k[2] = predictionID
+                                            curr[2] = predictionID
+                                            predictionID+=1
+                                        else:
+                                            curr[2]=k[2]
+                        if(curr[3]>3):
+                            sql = "UPDATE events SET classid=%s,frames=%s,videoID=%s,level=%s,predID=%s WHERE videoID = %s AND PredID= %s"
+                            val = (curr[4],curr[3], videoID,1, curr[2],videoID,curr[2])
+                            mycursor.execute(sql, val)
+                            mydb.commit()
+                        elif(curr[3]==3):
+                            sql = "INSERT INTO events (classid,time,frames,videoID,level,predID) VALUES (%s, %s,%s, %s,%s, %s)"
+                            val = (curr[4], time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),curr[3], videoID,1, curr[2])
+                            mycursor.execute(sql, val)
+                            mydb.commit()                                  
             centers = []
             #emberek megtalálása
             det2 = pred2[0]
