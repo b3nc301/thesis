@@ -56,7 +56,7 @@
                         <td>{{$report->classID}}</td>
                         <td>{{$report->time}}</td>
                         <td>{{$report->frames/60}}</td>
-                        <td>asd</td>
+                        <td>{{$report->video->videoName}}</td>
                         <td>{{$report->level}}</td>
                         <td><button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#viewModal" data-bs-url={{$report->video->videoURL}}> Megtekintés</button></td>
                         <td><a href={{$report->video->videoURL}} download class="btn btn-primary">Letöltés</a></td>
