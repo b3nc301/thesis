@@ -6,6 +6,7 @@ import datetime
 import subprocess
 import math
 
+import yaml
 
 
 import argparse
@@ -162,6 +163,26 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         bs = 1  # batch_size
     vid_path, vid_writer = [None] * bs, [None] * bs
 
+
+    ######################################### 
+    # Load the config for the top-down view #
+    #########################################
+    print("[ Loading config file for the bird view transformation ] ")
+    with open("../demos/config_birdview.yml", "r") as ymlfile:
+        cfg = yaml.load(ymlfile)
+    width_og, height_og = 0,0
+    corner_points = []
+    for section in cfg:
+        corner_points.append(cfg["image_parameters"]["p1"])
+        corner_points.append(cfg["image_parameters"]["p2"])
+        corner_points.append(cfg["image_parameters"]["p3"])
+        corner_points.append(cfg["image_parameters"]["p4"])
+        width_og = int(cfg["image_parameters"]["width_og"])
+        height_og = int(cfg["image_parameters"]["height_og"])
+        img_path = cfg["image_parameters"]["img_path"]
+        size_frame = cfg["image_parameters"]["size_frame"]
+    print(" Done : [ Config file loaded ] ...")
+
     #sql
     if save_video:
         global videoID
@@ -287,8 +308,8 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                             val = (curr[4], time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),curr[3], videoID,1, curr[2])
                             mycursor.execute(sql, val)
                             mydb.commit()                                  
-            centers = []
-            centercoords=[]
+            centers = list()
+            centercoords= list()
             #emberek megtalálása
             det2 = pred2[0]
             if len(det2):
@@ -310,8 +331,8 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                                 predID = k[2]
                                 frameNum = k[3]
 
-                    center=[(xyxy[0]+xyxy[2])/2, xyxy[3], (0,255,0), mask, predID]
-                    centerCoord=[(xyxy[0]+xyxy[2])/2, xyxy[3]]
+                    center=[int((xyxy[0]+xyxy[2])/2), int(xyxy[3]), (0,255,0), mask, predID]
+                    centerCoord=[int((xyxy[0]+xyxy[2])/2), int(xyxy[3])]
                     centercoords.append(centerCoord)
                     centers.append(center)
                     setdist=300
@@ -324,26 +345,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         
             
             
-            import yaml
 
-            ######################################### 
-            # Load the config for the top-down view #
-            #########################################
-            print("[ Loading config file for the bird view transformation ] ")
-            with open("../demos/config_birdview.yml", "r") as ymlfile:
-                cfg = yaml.load(ymlfile)
-            width_og, height_og = 0,0
-            corner_points = []
-            for section in cfg:
-                corner_points.append(cfg["image_parameters"]["p1"])
-                corner_points.append(cfg["image_parameters"]["p2"])
-                corner_points.append(cfg["image_parameters"]["p3"])
-                corner_points.append(cfg["image_parameters"]["p4"])
-                width_og = int(cfg["image_parameters"]["width_og"])
-                height_og = int(cfg["image_parameters"]["height_og"])
-                img_path = cfg["image_parameters"]["img_path"]
-                size_frame = cfg["image_parameters"]["size_frame"]
-            print(" Done : [ Config file loaded ] ...")
 
             matrix,imgOutput = compute_perspective_transform(corner_points,width_og,height_og,im0)
             height,width,_ = imgOutput.shape
@@ -352,7 +354,16 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
             width = blank_image.shape[1] 
             dim = (width, height)
             bird_view_img = cv2.resize(im0, dim, interpolation = cv2.INTER_AREA)
+            print(centercoords)
+            transformed_downoids = compute_point_perspective_transformation(matrix,centercoords)
+            for point in transformed_downoids:
+                x,y= point
+                print(x)
+                cv2.circle(bird_view_img, (int(x),int(y)), 60, (0, 255, 0), 2)
+                cv2.circle(bird_view_img, (int(x),int(y)), 3, (0, 255, 0), -1)
             cv2.imshow("asd", bird_view_img)
+
+
 
             
             
