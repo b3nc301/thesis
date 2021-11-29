@@ -196,10 +196,13 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         save_path = str(save_dir) +"/"+time.strftime("%Y%m%d%H%M%S", start_localtime)+".mp4"
     #változók beállítása
     predictionList = np.zeros((4,10,5)) #az észleléseket tároló vektor
+    prevViolated = list() #a mozgásokat tároló lista
+    violateID=0
     #(4 képkockán max 10 észlelés, minden észleléshez tartozik 4 adat, x,y koordináta egy prediction ID, ami összeköti az észleléseket és egy frame number, hogy hány képkockán keresztül tartott az esemény)
     frameCounter = 0 #képkocka számláló 
     predictionID=0
     frameNum = 0 
+    violateFrames=0
     # a hálózat alkalmazása a képkockákon
     if device.type != 'cpu':
         model2(torch.zeros(1, 3, *imgsz).to(device).type_as(next(model.parameters())))  # run once
@@ -255,10 +258,6 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                     predictionList[1]=predictionList[2]
                     predictionList[2]=predictionList[3]
                     predictionList[3]=np.zeros((10,5))
-
-
-
-
                 # Az eredmények összegyűjtése
                 detectionCounter = 0
                 for *xyxy, conf, cls in reversed(det):
@@ -323,21 +322,14 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                 # Az eredmények kiítása
                 for *xyxy, conf, cls in reversed(det2):
                     mask=False
-                    predID=None
                     if frameCounter>4 :
                         for k in predictionList[3]:
                             if(xyxy[0]<k[0] and xyxy[2] > k[0] and xyxy[1] < k[1] and xyxy[3] > k[1]):
                                 mask = True
-                                predID = k[2]
-                                frameNum = k[3]
-
-                    center=[int((xyxy[0]+xyxy[2])/2), int(xyxy[3]), (0,255,0), mask, predID,frameNum]
+                                frameNum = 1
+                    center=[int((xyxy[0]+xyxy[2])/2), int(xyxy[3]), (0,255,0), mask, frameNum,-1]
                     centers.append(center)
-                    centerCoord=[int((xyxy[0]+xyxy[2])/2), int(xyxy[3])]
-                    centercoords.append(centerCoord)
                     setdist=300
-
-
                     if stream_img:  #(befoglaló geometria képre mentése)
                         c = int(cls)  # integer class
                         label2 = None if hide_labels else (names2[c] if hide_conf else f'{names2[c]} {conf:.2f}')
@@ -346,7 +338,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
             
             
 
-
+            #perspektíva transzformáció
             matrix,imgOutput = compute_perspective_transform(corner_points,width_og,height_og,im0)
             height,width,_ = imgOutput.shape
             blank_image = np.zeros((height,width,3), np.uint8)
@@ -355,7 +347,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
             dim = (width, height)
             bird_view_img = cv2.resize(im0, dim, interpolation = cv2.INTER_AREA)
             print(centercoords)
-            transformed_downoids = compute_point_perspective_transformation(matrix,centercoords)
+            transformed_downoids = compute_point_perspective_transformation(matrix,(center[0],center[1]))
             for point in transformed_downoids:
                 x,y= point
                 print(x)
@@ -363,14 +355,8 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                 cv2.circle(bird_view_img, (int(x),int(y)), 3, (0, 255, 0), -1)
             cv2.imshow("asd", bird_view_img)
 
-
-
-            
-            
-            
-            
-            
-            violated= []
+            #távolságmérés
+            violated= list()
             for c in centers:
                 for c1 in centers:
                     dist = math.sqrt(math.pow((c1[0]-c[0]),2) + math.pow((c1[1]-c[1]),2))
@@ -380,21 +366,23 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         c[2] = (0,0,255)
                         if c not in violated:
                             violated.append(c)
-                        if c1 not in violated:
-                            violated.append(c1)
-
-            violatedPrediction = False
-            for v in violated:
-                if(v[2] == True):
-                    if(frameNum>=3):
-                        sql = "UPDATE events SET classid=%s,level=%s,predID=%s WHERE videoID = %s AND PredID= %s"
-                        val = (4,3,videoID,v[4])
-                        mycursor.execute(sql, val)
-                        mydb.commit()  
-            
-
-                        
-
+            if len(violated):
+                if len(prevViolated):
+                    violateFrames+=1
+                    sql = "UPDATE events SET frames=%s WHERE videoID = %s AND predID= %s"
+                    val = (violateFrames, videoID,violateID)
+                    mycursor.execute(sql, val)
+                    mydb.commit()
+                else:
+                    violateID=predictionID
+                    predictionID+=1
+                    violateFrames=1
+                    print("insert")
+                    sql = "INSERT INTO events (classid,time,frames,videoID,level,predID) VALUES (%s, %s,%s, %s,%s, %s)"
+                    val = (3, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),violateFrames, videoID,3, violateID)
+                    mycursor.execute(sql, val)
+                    mydb.commit()
+            prevViolated = violated
             # Print completed inference(debug only)
             LOGGER.info(f'{s}Done.')
 
