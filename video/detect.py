@@ -265,11 +265,11 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                     #Ha még nincs 4 frame akkor csak feltöltés következik
                     if frameCounter<4 :
                         if detectionCounter<10 :
-                            predictionList[frameCounter][detectionCounter][0] = xyxy[0]
-                            predictionList[frameCounter][detectionCounter][1] = xyxy[1]
-                            predictionList[frameCounter][detectionCounter][2] = -1
-                            predictionList[frameCounter][detectionCounter][3] = 1
-                            predictionList[frameCounter][detectionCounter][4] = int(cls)
+                            predictionList[frameCounter][detectionCounter][0] = xyxy[0] # bal felso koord x
+                            predictionList[frameCounter][detectionCounter][1] = xyxy[1] #bal felso koord y
+                            predictionList[frameCounter][detectionCounter][2] = -1      #prediction ID
+                            predictionList[frameCounter][detectionCounter][3] = 1       #frame number
+                            predictionList[frameCounter][detectionCounter][4] = int(cls)#class ID
                     #Ha van már 4 frame akkor csak az utolsó képkocka adatainak feltöltése zajlik
                     else:
                         if detectionCounter<10 :
@@ -331,10 +331,10 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                                 predID = k[2]
                                 frameNum = k[3]
 
-                    center=[int((xyxy[0]+xyxy[2])/2), int(xyxy[3]), (0,255,0), mask, predID]
+                    center=[int((xyxy[0]+xyxy[2])/2), int(xyxy[3]), (0,255,0), mask, predID,frameNum]
+                    centers.append(center)
                     centerCoord=[int((xyxy[0]+xyxy[2])/2), int(xyxy[3])]
                     centercoords.append(centerCoord)
-                    centers.append(center)
                     setdist=300
 
 
@@ -383,19 +383,15 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         if c1 not in violated:
                             violated.append(c1)
 
-            ''' violatedPrediction = False
+            violatedPrediction = False
             for v in violated:
-                for p in predictionList[3]:
-                    if v[3] == p[2]:
-                        if p[2] != -1:
-                            violatedPrediction = True
-                            if(p[3]>=3):
-                                sql = "UPDATE events SET classid=%s,frames=%s,videoID=%s,level=%s,predID=%s WHERE videoID = %s AND PredID= %s"
-                                val = (p[4],p[3], videoID,4, p[2],videoID,p[2])
-                                mycursor.execute(sql, val)
-                                mydb.commit()
-                    if(not violatedPrediction):
-            '''
+                if(v[2] == True):
+                    if(frameNum>=3):
+                        sql = "UPDATE events SET classid=%s,level=%s,predID=%s WHERE videoID = %s AND PredID= %s"
+                        val = (4,3,videoID,v[4])
+                        mycursor.execute(sql, val)
+                        mydb.commit()  
+            
 
                         
 

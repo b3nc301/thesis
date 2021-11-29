@@ -25,7 +25,7 @@ vs = cv2.VideoCapture(video_name)
 while True:    
     # Load the frame and test if it has reache the end of the video
     (frame_exists, frame) = vs.read()
-    frame = imutils.resize(frame, width=int(size_frame))
+    #frame = imutils.resize(frame, width=int(size_frame))
     print(frame)
     cv2.imwrite("static_frame_from_video.jpg",frame)
     break
