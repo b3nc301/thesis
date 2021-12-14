@@ -353,7 +353,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                 print(x)
                 cv2.circle(bird_view_img, (int(x),int(y)), 60, (0, 255, 0), 2)
                 cv2.circle(bird_view_img, (int(x),int(y)), 3, (0, 255, 0), -1)
-            cv2.imshow("asd", bird_view_img)
+            #cv2.imshow("asd", bird_view_img)
 
             #távolságmérés
             violated= list()
@@ -417,7 +417,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         rtmp_url]
                     #ffmpeg plugin indítása
                     proc1 = subprocess.Popen(command, stdin=subprocess.PIPE)
-                cv2.imshow(str(p), im0)
+                #cv2.imshow(str(p), im0)
                 proc1.stdin.write(im0.tobytes())
                 cv2.waitKey(1)  # vár 1 millisecond
             
