@@ -98,9 +98,9 @@ mycursor = mydb.cursor()
 rtmp_url = "rtmp://localhost:1935/live/stream"
 #alap futó függvüny
 @torch.no_grad()
-def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
+def run(weights=ROOT / 'best.pt',  # model.pt path(s)
         source=ROOT / 'data/images',  # file/dir/URL/glob, 0 for webcam
-        imgsz=640,  # inference size (pixels)
+        imgsz=[640,420],  # inference size (pixels)
         conf_thres=0.25,  # confidence threshold
         iou_thres=0.45,  # NMS IOU threshold
         device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
@@ -117,6 +117,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         hide_labels=False,  # hide labels
         hide_conf=False,  # hide confidences
         half=True,  # use FP16 half-precision inference
+        min=0
         ):
     global proc1
     global proc2
@@ -480,7 +481,6 @@ def parse_opt():
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
     parser.add_argument('--min', type=float, default=0.45, help='Minimum distance')
     opt = parser.parse_args()
-    opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
     print_args(FILE.stem, opt)
     return opt
 

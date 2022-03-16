@@ -34,12 +34,17 @@ async def setup(websocket, path):
                     await websocket.send(json.dumps({"status":"fail","proc":"start"}))
                 #összeállítjuk az új adatszerkezetet a meglévő és új paraméterekből
                 data = {**data, **receivedData}
-                prep = "--src" + data["src"] +"--conf-thres" + data["conf"]  + "--min" + data["min"]
+                #prep = "--source " + data["src"] +" --conf-thres " + data["conf"]  + " --min " + data["min"]
+                prep=["python3",
+                "detect.py",
+                "--source", data["src"],
+                "--conf-thres", data["conf"],
+                "--min", data["min"]]
                 #ha nincs futó process akkor elindul
                 if proc is None:
-                    proc = subprocess.Popen(["python3", "backend.py", prep])
+                    proc = subprocess.Popen(prep)
                 elif proc.poll() is not None:
-                    proc = subprocess.Popen(["python3", "backend.py", prep])
+                    proc = subprocess.Popen(prep)
                 else:
                     await websocket.send(json.dumps({"status":"fail","proc":"start"}))
                 time.sleep(3)
@@ -61,9 +66,13 @@ async def setup(websocket, path):
                 #ha van futó process akkor leállítjuk és elindítjuk újra
                 if proc is not None:
                     if proc.poll() is None:
-                        prep = "--src" + data["src"] +"--conf-thres" + data["conf"]  + "--min" + data["min"]
+                        prep=["python3",
+                            "detect.py",
+                            "--source", data["src"],
+                            "--conf-thres", data["conf"],
+                            "--min", data["min"]]
                         proc.terminate()
-                        roc = subprocess.Popen(["python3", "backend.py", prep])
+                        roc = subprocess.Popen(prep)
                         if proc.poll() is not None:
                             await websocket.send(json.dumps({"status":"fail","proc":"change"}))
                         else: 
