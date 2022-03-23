@@ -56,6 +56,8 @@ mydb = mysql.connector.connect(
 proc1 = None
 proc2 = None
 videoID = "0"
+mycursor = mydb.cursor()
+#mysql connector definíció vége
 
 
 
@@ -91,8 +93,6 @@ def compute_point_perspective_transformation(matrix,list_downoids):
 		transformed_points_list.append([transformed_points[i][0][0],transformed_points[i][0][1]])
 	return transformed_points_list
 
-mycursor = mydb.cursor()
-#mysql connector definíció vége
 
 #RTMP stream URL
 rtmp_url = "rtmp://localhost:1935/live/stream"
@@ -289,14 +289,15 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
                         if(curr[0]!=0 and curr[1]!=0 ):
                             for j in range(0,3):
                                 for k in predictionList[j]:
-                                    if(math.sqrt(math.pow((curr[0]-k[0]),2) + math.pow((curr[1]-k[1]),2))<=distance and (curr[4] != 1)):
-                                        curr[3]=k[3]+1
-                                        if(k[2] == -1):
+                                    if(math.sqrt(math.pow((curr[0]-k[0]),2) + math.pow((curr[1]-k[1]),2))<=distance and (curr[4] != 1)): #2 észelelés összetarozik-e(pixeltávolság számítása)
+                                        curr[3]=k[3]+1 #képkocka száma előző észlelés +1
+                                        if(k[2] == -1): #Prediction ID növelése inkrementálisan
                                             k[2] = predictionID
                                             curr[2] = predictionID
                                             predictionID+=1
                                         else:
                                             curr[2]=k[2]
+                        #SQL műveletek
                         if(curr[3]>3):
                             sql = "UPDATE events SET classid=%s,frames=%s,videoID=%s,level=%s,predID=%s WHERE videoID = %s AND PredID= %s"
                             val = (curr[4],curr[3], videoID,1, curr[2],videoID,curr[2])
