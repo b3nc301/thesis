@@ -339,9 +339,9 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
             transformed_centers=list()
             matrix,imgOutput = compute_perspective_transform(corner_points,width_og,height_og,im0)
             #relative távolság számolása
-            dist_w = compute_point_perspective_transformation(matrix,(center[0],center[1]))[0]
-            distance_w = np.sqrt((warped_pt[0][0] - warped_pt[1][0]) ** 2 + (warped_pt[0][1] - warped_pt[1][1]) ** 2)
-            distance_h = np.sqrt((warped_pt[0][0] - warped_pt[2][0]) ** 2 + (warped_pt[0][1] - warped_pt[2][1]) ** 2)
+            dist_point = compute_point_perspective_transformation(matrix,(center[0],center[1]))[0]
+            distance_w = np.sqrt((dist_point[0][0] - dist_point[1][0]) ** 2 + (dist_point[0][1] - dist_point[1][1]) ** 2)
+            distance_h = np.sqrt((dist_point[0][0] - dist_point[2][0]) ** 2 + (dist_point[0][1] - dist_point[2][1]) ** 2)
             ##
             height,width,_ = imgOutput.shape
             blank_image = np.zeros((height,width,3), np.uint8)
@@ -360,14 +360,13 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
             cv2.imshow("asd", bird_view_img)
             #távolságmérés
             violated= list()
-            for c in centers:
-                for c1 in centers:
+            for c in transformed_centers:
+                for c1 in transformed_centers:
                     h = abs(c1[1]-c[1])
                     w = abs(c1[0]-c[0])
                     dis_w = float((w/distance_w)*180)
                     dis_h = float((h/distance_h)*180)
-                    #dist = math.sqrt(math.pow((c1[0]-c[0]),2) + math.pow((c1[1]-c[1]),2))
-                    dist = int(np.sqrt(((dis_h)**2) + ((dis_w)**2)))
+                    dist = math.sqrt(math.pow((dis_h),2) + math.pow((dis_w),2))
                     if(dist<min and c != c1):
                         # távolságon belül vannak, sql művelet, és maszkvizsgálat kell
                         c1[2] = (0,0,255)
@@ -486,7 +485,7 @@ def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir/URL/glob, 0 for webcam')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
-    parser.add_argument('--min', type=float, default=0.45, help='Minimum distance')
+    parser.add_argument('--min', type=float, default=150, help='Minimum distance')
     opt = parser.parse_args()
     print_args(FILE.stem, opt)
     return opt
