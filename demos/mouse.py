@@ -53,7 +53,7 @@ if __name__ == "__main__":
     # Check if the 4 points have been saved
     while (True):
         cv2.imshow(windowName, img)
-        if len(list_points) == 4:
+        if len(list_points) == 7:
             # Return a dict to the YAML file
             config_data = dict(
                 image_parameters = dict(
@@ -61,6 +61,9 @@ if __name__ == "__main__":
                     p1 = list_points[2],
                     p4 = list_points[0],
                     p3 = list_points[1],
+                    pz = list_points[4],
+                    px = list_points[5],
+                    py = list_points[6],
                     width_og = width,
                     height_og = height,
                     img_path = img_path,

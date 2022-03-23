@@ -117,7 +117,7 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
         hide_labels=False,  # hide labels
         hide_conf=False,  # hide confidences
         half=True,  # use FP16 half-precision inference
-        min=0
+        min=150
         ):
     global proc1
     global proc2
@@ -165,11 +165,8 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
     vid_path, vid_writer = [None] * bs, [None] * bs
 
 
-    ######################################### 
-    # Load the config for the top-down view #
-    #########################################
-    print("[ Loading config file for the bird view transformation ] ")
-    with open("../demos/config_birdview.yml", "r") as ymlfile:
+    #madártávlati konfig beolvasása
+    with open("config.yml", "r") as ymlfile:
         cfg = yaml.load(ymlfile)
     width_og, height_og = 0,0
     corner_points = []
@@ -182,14 +179,16 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
         height_og = int(cfg["image_parameters"]["height_og"])
         img_path = cfg["image_parameters"]["img_path"]
         size_frame = cfg["image_parameters"]["size_frame"]
-    print(" Done : [ Config file loaded ] ...")
+        baseCoord = int(cfg["imgae_parameters"]["pz"])
+        xCoord = int(cfg["image_parameters"]["px"])
+        yCoord = int(cfg["image_parameters"]["py"])
 
     #sql
     if save_video:
         global videoID
         start_time = datetime.datetime.now() # a videó kezdeti időpontja
         start_localtime = time.localtime()
-        sql = "INSERT INTO videos (videoName,videoDate,videoURL,videoAvailable) VALUES (%s,%s,%s, %s)" # SQL insert kérés
+        sql = "INSERT INTO videos (videoName,videoDate,videoURL,videoAvailable) VALUES (%s,%s,%s, %s)" # SQL insert
         val = (time.strftime("%Y%m%d%H%M%S", start_localtime)+source, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),'not ready', 0)
         mycursor.execute(sql, val) # SQL kérés végrehajtása
         mydb.commit() # SQL kérés lezárása
@@ -197,7 +196,7 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
         save_path = str(save_dir) +"/"+time.strftime("%Y%m%d%H%M%S", start_localtime)+".mp4"
     #változók beállítása
     predictionList = np.zeros((4,10,5)) #az észleléseket tároló vektor
-    prevViolated = list() #a mozgásokat tároló lista
+    prevViolated = list() #a korábbi mozgásokat tároló lista
     violateID=0
     #(4 képkockán max 10 észlelés, minden észleléshez tartozik 4 adat, x,y koordináta egy prediction ID, ami összeköti az észleléseket és egy frame number, hogy hány képkockán keresztül tartott az esemény)
     frameCounter = 0 #képkocka számláló 
@@ -253,7 +252,7 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
                 for c in det[:, -1].unique():
                     n = (det[:, -1] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
-                #észlelések elmozgatása 1 képkockával az észleléseket tartalmazó vektorban
+                #észlelések elmozgatása 1 képkockával az észleléseket tartalmazó tömbben
                 if(frameCounter >= 4):
                     predictionList[0]=predictionList[1]
                     predictionList[1]=predictionList[2]
@@ -283,8 +282,8 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
                             c = int(cls)  # integer class
                             label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                             annotator.box_label(xyxy, label, color=colors(c, True))
-                distance = 30              
-
+                distance = 30
+                #Közeli maszkálllapotok keresése és SQL írás
                 if frameCounter > 4 :
                     for curr in predictionList[3]:
                         if(curr[0]!=0 and curr[1]!=0 ):
@@ -308,19 +307,16 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
                             val = (curr[4], time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),curr[3], videoID,1, curr[2])
                             mycursor.execute(sql, val)
                             mydb.commit()                                  
-            centers = list()
-            centercoords= list()
-            #emberek megtalálása
+            centers = list() # középpontok
+            #emberek megtalálása és középpontok eltárolása
             det2 = pred2[0]
             if len(det2):
                 # A befoglaló geometriák átméretezése img_sizeról im0 sizera
                 det2[:, :4] = scale_coords(img.shape[2:], det2[:, :4], im0.shape).round()
-
                 # Az eredmények kiírása(debug)
                 for c in det2[:, -1].unique():
                     n = (det2[:, -1] == c).sum()  # detections per class
                     s += f"{n} {names2[int(c)]}{'s' * (n > 1)}, "  # add to string
-                # Az eredmények kiítása
                 for *xyxy, conf, cls in reversed(det2):
                     mask=False
                     if frameCounter>4 :
@@ -330,7 +326,6 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
                                 frameNum = 1
                     center=[int((xyxy[0]+xyxy[2])/2), int(xyxy[3]), (0,255,0), mask, frameNum,-1]
                     centers.append(center)
-                    setdist=300
                     if stream_img:  #(befoglaló geometria képre mentése)
                         c = int(cls)  # integer class
                         label2 = None if hide_labels else (names2[c] if hide_conf else f'{names2[c]} {conf:.2f}')
@@ -340,28 +335,39 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
             
 
             #perspektíva transzformáció
+            transformed_centers=list()
             matrix,imgOutput = compute_perspective_transform(corner_points,width_og,height_og,im0)
+            #relative távolság számolása
+            dist_w = compute_point_perspective_transformation(matrix,(center[0],center[1]))[0]
+            distance_w = np.sqrt((warped_pt[0][0] - warped_pt[1][0]) ** 2 + (warped_pt[0][1] - warped_pt[1][1]) ** 2)
+            distance_h = np.sqrt((warped_pt[0][0] - warped_pt[2][0]) ** 2 + (warped_pt[0][1] - warped_pt[2][1]) ** 2)
+            ##
             height,width,_ = imgOutput.shape
             blank_image = np.zeros((height,width,3), np.uint8)
             height = blank_image.shape[0]
             width = blank_image.shape[1] 
             dim = (width, height)
-            bird_view_img = cv2.resize(im0, dim, interpolation = cv2.INTER_AREA)
-            print(centercoords)
-            transformed_downoids = compute_point_perspective_transformation(matrix,(center[0],center[1]))
-            for point in transformed_downoids:
-                x,y= point
-                print(x)
-                cv2.circle(bird_view_img, (int(x),int(y)), 60, (0, 255, 0), 2)
-                cv2.circle(bird_view_img, (int(x),int(y)), 3, (0, 255, 0), -1)
-            #cv2.imshow("asd", bird_view_img)
-
+            bird_view_img = cv2.resize(imgOutput, dim, interpolation = cv2.INTER_AREA)
+            for center in centers:
+                transformed_downoids = compute_point_perspective_transformation(matrix,(center[0],center[1]))
+                transformed_centers.add(transformed_downoids)
+                for point in transformed_downoids:
+                    x,y= point
+                    print(x)
+                    cv2.circle(bird_view_img, (int(x),int(y)), 60, (0, 255, 0), 2)
+                    cv2.circle(bird_view_img, (int(x),int(y)), 3, (0, 255, 0), -1)
+            cv2.imshow("asd", bird_view_img)
             #távolságmérés
             violated= list()
             for c in centers:
                 for c1 in centers:
-                    dist = math.sqrt(math.pow((c1[0]-c[0]),2) + math.pow((c1[1]-c[1]),2))
-                    if(dist<setdist and c != c1):
+                    h = abs(c1[1]-c[1])
+                    w = abs(c1[0]-c[0])
+                    dis_w = float((w/distance_w)*180)
+                    dis_h = float((h/distance_h)*180)
+                    #dist = math.sqrt(math.pow((c1[0]-c[0]),2) + math.pow((c1[1]-c[1]),2))
+                    dist = int(np.sqrt(((dis_h)**2) + ((dis_w)**2)))
+                    if(dist<min and c != c1):
                         # távolságon belül vannak, sql művelet, és maszkvizsgálat kell
                         c1[2] = (0,0,255)
                         c[2] = (0,0,255)
@@ -418,7 +424,7 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
                         rtmp_url]
                     #ffmpeg plugin indítása
                     proc1 = subprocess.Popen(command, stdin=subprocess.PIPE)
-                #cv2.imshow(str(p), im0)
+                cv2.imshow(str(p), im0)
                 proc1.stdin.write(im0.tobytes())
                 cv2.waitKey(1)  # vár 1 millisecond
             
