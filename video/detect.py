@@ -338,11 +338,6 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
             #perspektíva transzformáció
             transformed_centers=list()
             matrix,imgOutput = compute_perspective_transform(corner_points,width_og,height_og,im0)
-            #relative távolság számolása
-            dist_point = compute_point_perspective_transformation(matrix,(center[0],center[1]))[0]
-            distance_w = np.sqrt((dist_point[0][0] - dist_point[1][0]) ** 2 + (dist_point[0][1] - dist_point[1][1]) ** 2)
-            distance_h = np.sqrt((dist_point[0][0] - dist_point[2][0]) ** 2 + (dist_point[0][1] - dist_point[2][1]) ** 2)
-            ##
             height,width,_ = imgOutput.shape
             blank_image = np.zeros((height,width,3), np.uint8)
             height = blank_image.shape[0]
@@ -358,6 +353,11 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
                     cv2.circle(bird_view_img, (int(x),int(y)), 60, (0, 255, 0), 2)
                     cv2.circle(bird_view_img, (int(x),int(y)), 3, (0, 255, 0), -1)
             cv2.imshow("asd", bird_view_img)
+            #relative távolság számolása
+            dist_point = compute_point_perspective_transformation(matrix,(baseCoord,xCoord,yCoord))
+            distance_w = np.sqrt((dist_point[0][0] - dist_point[1][0]) ** 2 + (dist_point[0][1] - dist_point[1][1]) ** 2)
+            distance_h = np.sqrt((dist_point[0][0] - dist_point[2][0]) ** 2 + (dist_point[0][1] - dist_point[2][1]) ** 2)
+            ##
             #távolságmérés
             violated= list()
             for c in transformed_centers:
