@@ -93,6 +93,15 @@ def compute_point_perspective_transformation(matrix,list_downoids):
 		transformed_points_list.append([transformed_points[i][0][0],transformed_points[i][0][1]])
 	return transformed_points_list
 
+def getDistance(matrix,p1,p2,d_w,d_h):
+    transformed_downoids_p1 = compute_point_perspective_transformation(matrix,(p1[0],p1[1]))
+    transformed_downoids_p2 = compute_point_perspective_transformation(matrix,(p2[0],p2[1]))
+    h = abs(p2[1]-p1[1])
+    w = abs(p2[0]-p1[0])
+    dis_w = float((w/d_w)*200)
+    dis_h = float((h/d_h)*200)
+    dist = math.sqrt(math.pow((dis_h),2) + math.pow((dis_w),2))
+    return dist
 
 #RTMP stream URL
 rtmp_url = "rtmp://localhost:1935/live/stream"
@@ -179,9 +188,9 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
         height_og = int(cfg["image_parameters"]["height_og"])
         img_path = cfg["image_parameters"]["img_path"]
         size_frame = cfg["image_parameters"]["size_frame"]
-        baseCoord = int(cfg["imgae_parameters"]["pz"])
-        xCoord = int(cfg["image_parameters"]["px"])
-        yCoord = int(cfg["image_parameters"]["py"])
+        baseCoord = cfg["image_parameters"]["pz"]
+        xCoord = cfg["image_parameters"]["px"]
+        yCoord = cfg["image_parameters"]["py"]
 
     #sql
     if save_video:
@@ -334,40 +343,17 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
         
             
             
-
+            #print(centers)
             #perspektíva transzformáció
-            transformed_centers=list()
             matrix,imgOutput = compute_perspective_transform(corner_points,width_og,height_og,im0)
-            height,width,_ = imgOutput.shape
-            blank_image = np.zeros((height,width,3), np.uint8)
-            height = blank_image.shape[0]
-            width = blank_image.shape[1] 
-            dim = (width, height)
-            bird_view_img = cv2.resize(imgOutput, dim, interpolation = cv2.INTER_AREA)
-            for center in centers:
-                transformed_downoids = compute_point_perspective_transformation(matrix,(center[0],center[1]))
-                transformed_centers.add(transformed_downoids)
-                for point in transformed_downoids:
-                    x,y= point
-                    print(x)
-                    cv2.circle(bird_view_img, (int(x),int(y)), 60, (0, 255, 0), 2)
-                    cv2.circle(bird_view_img, (int(x),int(y)), 3, (0, 255, 0), -1)
-            cv2.imshow("asd", bird_view_img)
             #relative távolság számolása
             dist_point = compute_point_perspective_transformation(matrix,(baseCoord,xCoord,yCoord))
             distance_w = np.sqrt((dist_point[0][0] - dist_point[1][0]) ** 2 + (dist_point[0][1] - dist_point[1][1]) ** 2)
             distance_h = np.sqrt((dist_point[0][0] - dist_point[2][0]) ** 2 + (dist_point[0][1] - dist_point[2][1]) ** 2)
-            ##
-            #távolságmérés
             violated= list()
-            for c in transformed_centers:
-                for c1 in transformed_centers:
-                    h = abs(c1[1]-c[1])
-                    w = abs(c1[0]-c[0])
-                    dis_w = float((w/distance_w)*180)
-                    dis_h = float((h/distance_h)*180)
-                    dist = math.sqrt(math.pow((dis_h),2) + math.pow((dis_w),2))
-                    if(dist<min and c != c1):
+            for c in centers:
+                for c1 in centers:
+                    if(getDistance(matrix, c, c1, distance_w, distance_h)<min and c != c1):
                         # távolságon belül vannak, sql művelet, és maszkvizsgálat kell
                         c1[2] = (0,0,255)
                         c[2] = (0,0,255)
@@ -424,7 +410,7 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
                         rtmp_url]
                     #ffmpeg plugin indítása
                     proc1 = subprocess.Popen(command, stdin=subprocess.PIPE)
-                cv2.imshow(str(p), im0)
+                #cv2.imshow(str(p), im0)
                 proc1.stdin.write(im0.tobytes())
                 cv2.waitKey(1)  # vár 1 millisecond
             
