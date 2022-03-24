@@ -186,7 +186,6 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
         corner_points.append(cfg["image_parameters"]["p4"])
         width_og = int(cfg["image_parameters"]["width_og"])
         height_og = int(cfg["image_parameters"]["height_og"])
-        img_path = cfg["image_parameters"]["img_path"]
         size_frame = cfg["image_parameters"]["size_frame"]
         baseCoord = cfg["image_parameters"]["pz"]
         xCoord = cfg["image_parameters"]["px"]

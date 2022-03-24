@@ -48,6 +48,7 @@ list_points = list()
 # bind the callback function to window
 cv2.setMouseCallback(windowName, CallBackFunc)
 
+print("Please provide 4 corner points, and 3 distance points(start point, horizontal 1m distance endpoint, vertical 1m distance endpoint")
 
 if __name__ == "__main__":
     # Check if the 4 points have been saved
@@ -66,11 +67,10 @@ if __name__ == "__main__":
                     py = list_points[6],
                     width_og = width,
                     height_og = height,
-                    img_path = img_path,
                     size_frame = size_frame,
                     ))
             # Write the result to the config file
-            with open('config_birdview.yml', 'w') as outfile:
+            with open('config.yml', 'w') as outfile:
                 yaml.dump(config_data, outfile, default_flow_style=False)
             break
         if cv2.waitKey(20) == 27:
