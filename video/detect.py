@@ -98,8 +98,8 @@ def getDistance(matrix,p1,p2,d_w,d_h):
     transformed_downoids_p2 = compute_point_perspective_transformation(matrix,(p2[0],p2[1]))
     h = abs(p2[1]-p1[1])
     w = abs(p2[0]-p1[0])
-    dis_w = float((w/d_w)*200)
-    dis_h = float((h/d_h)*200)
+    dis_w = float((w/d_w)*100)
+    dis_h = float((h/d_h)*100)
     dist = math.sqrt(math.pow((dis_h),2) + math.pow((dis_w),2))
     return dist
 
