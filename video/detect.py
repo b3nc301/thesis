@@ -98,8 +98,8 @@ def getDistance(matrix,p1,p2,d_w,d_h):
     transformed_downoids_p2 = compute_point_perspective_transformation(matrix,(p2[0],p2[1]))
     h = abs(p2[1]-p1[1])
     w = abs(p2[0]-p1[0])
-    dis_w = float((w/d_w)*100)
-    dis_h = float((h/d_h)*100)
+    dis_w = float((w/d_w)*200)
+    dis_h = float((h/d_h)*200)
     dist = math.sqrt(math.pow((dis_h),2) + math.pow((dis_w),2))
     return dist
 
@@ -393,6 +393,7 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
                         h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                     else:  # stream
                         fps, w, h = 30, im0.shape[1], im0.shape[0]
+                                              #  
                     command = ['ffmpeg',
                             '-re',
                         '-y',
@@ -409,57 +410,61 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
                         rtmp_url]
                     #ffmpeg plugin indítása
                     proc1 = subprocess.Popen(command, stdin=subprocess.PIPE)
-                #cv2.imshow(str(p), im0)
+                cv2.imshow(str(p), im0)
                 proc1.stdin.write(im0.tobytes())
                 cv2.waitKey(1)  # vár 1 millisecond
             
             #videó mentése
-            if save_video:
-                #ha a videómentő nem fut indítsa el
-                if proc2 == None:
-                    if vid_cap:  # video
-                        fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                        w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                        h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                    else:  # stream
-                        fps, w, h = 30, im0.shape[1], im0.shape[0]
-                    command2 = ['ffmpeg',
-                        '-re',
-                        '-y',
-                        '-f', 'rawvideo',
-                        '-pix_fmt', 'bgr24',
-                        '-s', "{}x{}".format(str(w), str(h)),
-                        '-r', str(fps),
-                        '-i', '-',
-                        '-tune', 'zerolatency',
-                        '-crf', '18',
-                        '-vcodec', 'libx264',
-                        '-pix_fmt', 'yuv420p',
-                        str(save_path)]
-                    proc2 = subprocess.Popen(command2, stdin=subprocess.PIPE)
-                else: 
-                    #videó mentése
-                    proc2.stdin.write(im0.tobytes())
-            
-                time_spent= datetime.datetime.now()-start_time
-                #ha legalább 1 órája megy a videó zárja le a fájlt, mentse el SQL-ben, és írjon új videót
-                if time_spent.total_seconds() >= 60*60:
-                    sql = "UPDATE videos SET videoURL=%s, videoAvailable=%s WHERE id=%s"
-                    val = (save_path, 1, videoID)
-                    mycursor.execute(sql, val)
-                    mydb.commit()
-                    #új videó definiálása
-                    start_localtime = time.localtime()
-                    save_path = str(save_dir) +"/"+time.strftime("%Y%m%d%H%M%S", start_localtime)+".mp4"
-                    sql = "INSERT INTO videos (videoName,videoDate,videoURL,videoAvailable) VALUES (%s,%s,%s, %s)" # SQL insert kérés
-                    val = (time.strftime("%Y%m%d%H%M%S", start_localtime)+source, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),'not ready', 0)
-                    mycursor.execute(sql, val) # SQL kérés végrehajtása
-                    mydb.commit() # SQL kérés lezárása
-                    videoID=mycursor.lastrowid;# Az éppen mentendő videó ID-ja
-                    #videówriter kill
-                    proc2.terminate()
-                    proc2 = None
-                    start_time = datetime.datetime.now() # a videó kezdeti időpontja
+            if dataset.mode == 'image':
+                    print(save_path)
+                    cv2.imwrite(str(save_path)+".png", im0)
+            else:
+                if save_video:
+                    #ha a videómentő nem fut indítsa el
+                    if proc2 == None:
+                        if vid_cap:  # video
+                            fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                            w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                            h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                        else:  # stream
+                            fps, w, h = 30, im0.shape[1], im0.shape[0]
+                        command2 = ['ffmpeg',
+                            '-re',
+                            '-y',
+                            '-f', 'rawvideo',
+                            '-pix_fmt', 'bgr24',
+                            '-s', "{}x{}".format(str(w), str(h)),
+                            '-r', str(fps),
+                            '-i', '-',
+                            '-tune', 'zerolatency',
+                            '-crf', '18',
+                            '-vcodec', 'libx264',
+                            '-pix_fmt', 'yuv420p',
+                            str(save_path)]
+                        proc2 = subprocess.Popen(command2, stdin=subprocess.PIPE)
+                    else: 
+                        #videó mentése
+                        proc2.stdin.write(im0.tobytes())
+                
+                    time_spent= datetime.datetime.now()-start_time
+                    #ha legalább 1 órája megy a videó zárja le a fájlt, mentse el SQL-ben, és írjon új videót
+                    if time_spent.total_seconds() >= 60*60:
+                        sql = "UPDATE videos SET videoURL=%s, videoAvailable=%s WHERE id=%s"
+                        val = (save_path, 1, videoID)
+                        mycursor.execute(sql, val)
+                        mydb.commit()
+                        #új videó definiálása
+                        start_localtime = time.localtime()
+                        save_path = str(save_dir) +"/"+time.strftime("%Y%m%d%H%M%S", start_localtime)+".mp4"
+                        sql = "INSERT INTO videos (videoName,videoDate,videoURL,videoAvailable) VALUES (%s,%s,%s, %s)" # SQL insert kérés
+                        val = (time.strftime("%Y%m%d%H%M%S", start_localtime)+source, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),'not ready', 0)
+                        mycursor.execute(sql, val) # SQL kérés végrehajtása
+                        mydb.commit() # SQL kérés lezárása
+                        videoID=mycursor.lastrowid;# Az éppen mentendő videó ID-ja
+                        #videówriter kill
+                        proc2.terminate()
+                        proc2 = None
+                        start_time = datetime.datetime.now() # a videó kezdeti időpontja
 
 
 

@@ -7,7 +7,7 @@ import time
 #változók feltöltése
 originalData = {"src":"rtsp://localhost/camera",
 "conf":"0.25",
-"min":"1.5"}
+"min":"150"}
 proc = None
 
 data=originalData
