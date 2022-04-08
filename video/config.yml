@@ -1,26 +1,25 @@
 image_parameters:
   height_og: 1280
-  img_path: static_frame_from_video.jpg
   p1:
-  - 534
-  - 332
+  - 531
+  - 344
   p2:
-  - 213
-  - 356
+  - 217
+  - 335
   p3:
-  - 976
-  - 489
+  - 977
+  - 484
   p4:
-  - 407
-  - 653
+  - 565
+  - 554
   px:
-  - 976
-  - 481
+  - 646
+  - 545
   py:
-  - 381
-  - 382
+  - 499
+  - 509
   pz:
-  - 566
-  - 556
-  size_frame: '1080'
+  - 565
+  - 558
+  size_frame: '320'
   width_og: 720
