@@ -3,6 +3,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
+
 
 class CreateUsersTable extends Migration
 {
@@ -22,7 +24,15 @@ class CreateUsersTable extends Migration
             $table->rememberToken();
             $table->timestamps();
         });
+        DB::table('users')->insert(
+            array(
+                'name' => 'Administrator',
+                'email' => 'admin@admin',
+                'password' => '$2y$10$9HyHbLKNDhp.M/cSy.ukEuz2IU5DucWNjbUI4SpHmpFMIOrK/wkO2'
+            )
+        );
     }
+
 
     /**
      * Reverse the migrations.
