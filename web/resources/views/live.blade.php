@@ -36,9 +36,9 @@
                           <button type="button" class="btn btn-primary" onclick=getData()> Adatok lekérése</button>
                           <button type="button" class="btn btn-primary" onclick=changeData()> Adatok módosítása</button>
                         </div>
-                      <div>Beállított forrás:</div> <input type="text" id="src">
-                      <div>Beállított bizonyossági küszöb:</div> <input type="number" id="conf">
-                      <div>Minimum szükséges távolság emberek között:</div> <input type="number" id="min">
+                      <div>Videóanyag forrása:</div> <input type="text" id="src">
+                      <div>Bizonyossági küszöb:</div> <input type="number" id="conf">
+                      <div>Minimum szükséges távolság emberek között(cm):</div> <input type="number" id="min">
                     </div>
                     </div>
                 </div>
