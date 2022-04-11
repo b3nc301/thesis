@@ -1,0 +1,4 @@
+val: ./test1/test
+
+nc: 2
+names: ['mask', 'no-mask']

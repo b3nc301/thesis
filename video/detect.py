@@ -53,11 +53,12 @@ mydb = mysql.connector.connect(
   password="laravel",
   database="laravel"
 )
+mycursor = mydb.cursor()
+#mysql connector definíció vége
 proc1 = None
 proc2 = None
 videoID = "0"
-mycursor = mydb.cursor()
-#mysql connector definíció vége
+
 
 
 
@@ -196,12 +197,12 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
         global videoID
         start_time = datetime.datetime.now() # a videó kezdeti időpontja
         start_localtime = time.localtime()
+        save_path = str(save_dir) +"/"+time.strftime("%Y%m%d%H%M%S", start_localtime)+".mp4"
         sql = "INSERT INTO videos (videoName,videoDate,videoURL,videoAvailable) VALUES (%s,%s,%s, %s)" # SQL insert
-        val = (time.strftime("%Y%m%d%H%M%S", start_localtime)+source, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),'not ready', 0)
+        val = (time.strftime("%Y%m%d%H%M%S", start_localtime)+source, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),save_path, 0)
         mycursor.execute(sql, val) # SQL kérés végrehajtása
         mydb.commit() # SQL kérés lezárása
         videoID=mycursor.lastrowid;# Az éppen mentendő videó ID-ja
-        save_path = str(save_dir) +"/"+time.strftime("%Y%m%d%H%M%S", start_localtime)+".mp4"
     #változók beállítása
     predictionList = np.zeros((4,10,5)) #az észleléseket tároló vektor
     prevViolated = list() #a korábbi mozgásokat tároló lista
@@ -376,7 +377,7 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
                     mydb.commit()
             prevViolated = violated
             # Print completed inference(debug only)
-            LOGGER.info(f'{s}Done.')
+            #LOGGER.info(f'{s}Done.')
 
 
 
@@ -410,7 +411,7 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
                         rtmp_url]
                     #ffmpeg plugin indítása
                     proc1 = subprocess.Popen(command, stdin=subprocess.PIPE)
-                cv2.imshow(str(p), im0)
+                #cv2.imshow(str(p), im0)
                 proc1.stdin.write(im0.tobytes())
                 cv2.waitKey(1)  # vár 1 millisecond
             
@@ -465,6 +466,10 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
                         proc2.terminate()
                         proc2 = None
                         start_time = datetime.datetime.now() # a videó kezdeti időpontja
+    sql = "UPDATE videos SET videoAvailable=%s WHERE id=%s"
+    val = (1, videoID)
+    mycursor.execute(sql, val)
+    mydb.commit()
 
 
 
@@ -477,7 +482,7 @@ def parse_opt():
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
     parser.add_argument('--min', type=float, default=150, help='Minimum distance')
     opt = parser.parse_args()
-    print_args(FILE.stem, opt)
+    #print_args(FILE.stem, opt)
     return opt
 
 
