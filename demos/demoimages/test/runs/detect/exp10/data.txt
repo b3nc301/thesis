@@ -1,0 +1,6 @@
+masked:2
+no-masked:6
+
+masked-detected:2
+no-masked-detected:4
+FP:0
