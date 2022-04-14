@@ -1,11 +1,12 @@
 <head>
-    <title>Események</title>
+    <title>Események megtekintése</title>
+    <link rel="stylesheet"href="css/layout.css" >
     </head>
     <x-app-layout>
 
         <x-slot name="header">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Események') }}
+                {{ __('Események megtekintése') }}
             </h2>
         </x-slot>
 
