@@ -2,5 +2,7 @@ masked:0
 no-masked:1
 
 masked-detected:0
-no-masked-detected:2
+no-masked-detected:0
+mask-false-detected:0
+no-masked-false-detected:2
 FP:2
