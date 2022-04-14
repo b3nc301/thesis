@@ -51,6 +51,7 @@
                     </thead>
                     <tbody>
                         @foreach ($events as $report)
+                        @if($report->video != null)
                         <tr>
                         <th scope="col">{{$report->id}}</th>
                         <td>{{$report->classID}}</td>
@@ -62,6 +63,7 @@
                         <td><a href={{$report->video->videoURL}} download class="btn btn-primary">Letöltés</a></td>
                         <td><button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" data-bs-id={{$report->id}} data-bs-name={{$report->video->videoName}}>Törlés</button></td>
                     </tr>
+                        @endif
                         @endforeach
                     </tbody>
                   </table>
