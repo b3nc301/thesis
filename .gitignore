@@ -1,3 +1,7 @@
 video/runs/detect
 
 video/__pycache__
+
+web.orig
+web/vendor
+web/.env

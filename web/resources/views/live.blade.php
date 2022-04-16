@@ -21,11 +21,12 @@
                         <video
                         id="live-stream"
                         controls
-			class="video-js vjs-default-skin mb-5"
+			            class="video-js vjs-default-skin mb-5"
                         width="1280"
                         height="720">
                         <source src="/lives/stream.m3u8" type="application/x-mpegURL" />
                       </video>
+
 
 
                     <div class="liveButtons">
