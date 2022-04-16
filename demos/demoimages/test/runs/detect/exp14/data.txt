@@ -1,4 +1,4 @@
-masked:6
+masked:5
 no-masked:0
 
 masked-detected:5
