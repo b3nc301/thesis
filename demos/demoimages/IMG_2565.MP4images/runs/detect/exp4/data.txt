@@ -1,8 +1,8 @@
-masked:1
-no-masked:0
+masked:0
+no-masked:1
 
-masked-detected:1
-no-masked-detected:0
-mask-false-detected:0
+masked-detected:0
+no-masked-detected:1
+mask-false-detected:1
 no-masked-false-detected:0
 FP:0
