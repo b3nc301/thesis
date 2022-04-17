@@ -225,11 +225,6 @@ def run(weights=ROOT / './yolov5m.pt',  # model.pt path(s)
                     mask=False
                     center=[int((xyxy[0]+xyxy[2])/2), int(xyxy[3]), (0,255,0), mask, frameNum,-1]
                     centers.append(center)
-                    
-                    if stream_img:  #(befoglaló geometria képre mentése)
-                        c = int(cls)  # integer class
-                        label2 = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
-                        annotator.box_label(xyxy, label2, color=colors(c, True))
                 print(centers)
                 print(prevCenters)
                 print("\n")
