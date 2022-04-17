@@ -44,22 +44,6 @@ from utils.torch_utils import  select_device
 #vissza a jelenlegi mappába
 os.chdir("../")
 
-#mysql connector definíció
-import mysql.connector
-
-mydb = mysql.connector.connect(
-  host="localhost",
-  user="laravel",
-  password="laravel",
-  database="laravel"
-)
-mycursor = mydb.cursor()
-#mysql connector definíció vége
-proc1 = None
-proc2 = None
-videoID = "0"
-
-
 
 
 # https://deepnote.com/@deepnote/A-social-distancing-detector-using-a-Tensorflow-object-detection-model-Python-and-OpenCV-KBcEvWejRjGyjy2YnxiP5Q
@@ -129,8 +113,6 @@ def run(weights=ROOT / './yolov5m.pt',  # model.pt path(s)
         half=True,  # use FP16 half-precision inference
         min=150
         ):
-    global proc1
-    global proc2
     #forrásvizsgálat, hogy videó-e vagy stream
     source = str(source)
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
@@ -156,7 +138,7 @@ def run(weights=ROOT / './yolov5m.pt',  # model.pt path(s)
     names = model.module.names if hasattr(model, 'module') else model.names  # Osztályok neveinek eltárolása
     if half:
         model.half()  # to FP16
-    imgsz = check_img_size(imgsz, s=stride2)  # check image size
+    imgsz = check_img_size(imgsz, s=stride)  # check image size
 
     # Dataloader, itt tölti be a videókat/streamet képkockákba
     if webcam:
@@ -187,17 +169,6 @@ def run(weights=ROOT / './yolov5m.pt',  # model.pt path(s)
         xCoord = cfg["image_parameters"]["px"]
         yCoord = cfg["image_parameters"]["py"]
 
-    #sql
-    if save_video:
-        global videoID
-        start_time = datetime.datetime.now() # a videó kezdeti időpontja
-        start_localtime = time.localtime()
-        save_path = str(save_dir) +"/"+time.strftime("%Y%m%d%H%M%S", start_localtime)+".mp4"
-        sql = "INSERT INTO videos (videoName,videoDate,videoURL,videoAvailable) VALUES (%s,%s,%s, %s)" # SQL insert
-        val = (time.strftime("%Y%m%d%H%M%S", start_localtime)+source, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),save_path, 0)
-        mycursor.execute(sql, val) # SQL kérés végrehajtása
-        mydb.commit() # SQL kérés lezárása
-        videoID=mycursor.lastrowid;# Az éppen mentendő videó ID-ja
     #változók beállítása
     predictionList = np.zeros((4,10,5)) #az észleléseket tároló vektor
     prevViolated = list() #a korábbi mozgásokat tároló lista
@@ -209,13 +180,10 @@ def run(weights=ROOT / './yolov5m.pt',  # model.pt path(s)
     violateFrames=0
     # a hálózat alkalmazása a képkockákon
     if device.type != 'cpu':
-        model2(torch.zeros(1, 3, *imgsz).to(device).type_as(next(model.parameters())))  # run once
         model(torch.zeros(1, 3, *imgsz).to(device).type_as(next(model.parameters())))  # run once
+    prevCenters = list() # középpontok
 
     for path, img, im0s, vid_cap, s in dataset:
-
-        frameCounter += 1
-
         #A képek betöltése és átalakítása
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -243,8 +211,6 @@ def run(weights=ROOT / './yolov5m.pt',  # model.pt path(s)
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             annotator = Annotator(im0, line_width=line_thickness, example=str(names))
 
-
-
             centers = list() # középpontok
             #emberek megtalálása és középpontok eltárolása
             det2 = pred2[0]
@@ -254,21 +220,19 @@ def run(weights=ROOT / './yolov5m.pt',  # model.pt path(s)
                 # Az eredmények kiírása(debug)
                 for c in det2[:, -1].unique():
                     n = (det2[:, -1] == c).sum()  # detections per class
-                    s += f"{n} {names2[int(c)]}{'s' * (n > 1)}, "  # add to string
+                    s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
                 for *xyxy, conf, cls in reversed(det2):
                     mask=False
-                    if frameCounter>4 :
-                        for k in predictionList[3]:
-                            if(xyxy[0]<k[0] and xyxy[2] > k[0] and xyxy[1] < k[1] and xyxy[3] > k[1]):
-                                mask = True
-                                frameNum = 1
                     center=[int((xyxy[0]+xyxy[2])/2), int(xyxy[3]), (0,255,0), mask, frameNum,-1]
                     centers.append(center)
+                    
                     if stream_img:  #(befoglaló geometria képre mentése)
                         c = int(cls)  # integer class
-                        label2 = None if hide_labels else (names2[c] if hide_conf else f'{names2[c]} {conf:.2f}')
+                        label2 = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label2, color=colors(c, True))
-        
+                print(centers)
+                print(prevCenters)
+                print("\n")
             
             
             #print(centers)
@@ -278,23 +242,19 @@ def run(weights=ROOT / './yolov5m.pt',  # model.pt path(s)
             dist_point = compute_point_perspective_transformation(matrix,(baseCoord,xCoord,yCoord))
             distance_w = np.sqrt((dist_point[0][0] - dist_point[1][0]) ** 2 + (dist_point[0][1] - dist_point[1][1]) ** 2)
             distance_h = np.sqrt((dist_point[0][0] - dist_point[2][0]) ** 2 + (dist_point[0][1] - dist_point[2][1]) ** 2)
-            violated= list()
             for c in centers:
-                for c1 in centers:
+                for c1 in prevCenters:
+                    print(getDistance(matrix, c, c1, distance_w, distance_h))
                     if(getDistance(matrix, c, c1, distance_w, distance_h)<min and c != c1):
-                        # távolságon belül vannak, sql művelet, és maszkvizsgálat kell
                         c1[2] = (0,0,255)
                         c[2] = (0,0,255)
-                        if c not in violated:
-                            violated.append(c)
-            prevViolated = violated
-
-
+                        print(getDistance(matrix, c, c1, distance_w, distance_h))
+            prevCenters = centers.copy()
 
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir/URL/glob, 0 for webcam')
+    parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='dir')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
     parser.add_argument('--min', type=float, default=150, help='Minimum distance')
     opt = parser.parse_args()
