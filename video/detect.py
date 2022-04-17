@@ -372,7 +372,7 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
                     violateFrames=1
                     print("insert")
                     sql = "INSERT INTO events (classid,time,frames,videoID,level,predID) VALUES (%s, %s,%s, %s,%s, %s)"
-                    val = (3, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),violateFrames, videoID,3, violateID)
+                    val = (3, time.strftime("%Y-%m-\%d %H:%M:%S", time.localtime()),violateFrames, videoID,2, violateID)
                     mycursor.execute(sql, val)
                     mydb.commit()
             prevViolated = violated

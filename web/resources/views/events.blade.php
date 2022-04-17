@@ -26,8 +26,6 @@
                                 <option>Nincs kiválasztva</option>
                                 <option value="1" @if(isset($_GET['level']) && $_GET['level'] == '1')selected @endif>1</option>
                                 <option value="2" @if(isset($_GET['level']) && $_GET['level'] == '2')selected @endif>2</option>
-                                <option value="3" @if(isset($_GET['level']) && $_GET['level'] == '3')selected @endif>3</option>
-                                <option value="4" @if(isset($_GET['level']) && $_GET['level'] == '4')selected @endif>4</option>
                                 </select>
                             <button type="submit" class="btn btn-primary">Keresés</button>
                       </div>
@@ -55,7 +53,7 @@
                         @if($report->video != null)
                         <tr>
                         <th scope="col">{{$report->id}}</th>
-                        <td>{{$report->classID}}</td>
+                        <td>@if($report->classID==0) Maszkviselés megszegve @else @if($report->classID==3) Távolság megsértve @else N/A @endif @endif</td>
                         <td>{{$report->time}}</td>
                         <td>{{$report->frames/60}}</td>
                         <td>{{$report->video->videoName}}</td>
