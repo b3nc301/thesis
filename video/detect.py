@@ -97,10 +97,12 @@ def compute_point_perspective_transformation(matrix,list_downoids):
 def getDistance(matrix,p1,p2,d_w,d_h):
     transformed_downoids_p1 = compute_point_perspective_transformation(matrix,(p1[0],p1[1]))
     transformed_downoids_p2 = compute_point_perspective_transformation(matrix,(p2[0],p2[1]))
-    h = abs(p2[1]-p1[1])
-    w = abs(p2[0]-p1[0])
-    dis_w = float((w/d_w)*200)
-    dis_h = float((h/d_h)*200)
+    h = abs(transformed_downoids_p2[0][0]-transformed_downoids_p1[0][0])
+    w = abs(transformed_downoids_p2[0][1]-transformed_downoids_p1[0][1])
+    #h = abs(p2[1]-p1[1])
+    #w = abs(p2[0]-p1[0])
+    dis_w = float((w/d_w)*100)
+    dis_h = float((h/d_h)*100)
     dist = math.sqrt(math.pow((dis_h),2) + math.pow((dis_w),2))
     return dist
 
@@ -340,10 +342,6 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
                         c = int(cls)  # integer class
                         label2 = None if hide_labels else (names2[c] if hide_conf else f'{names2[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label2, color=colors(c, True))
-        
-            
-            
-            #print(centers)
             #perspektíva transzformáció
             matrix,imgOutput = compute_perspective_transform(corner_points,width_og,height_og,im0)
             #relative távolság számolása
@@ -378,9 +376,6 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
             prevViolated = violated
             # Print completed inference(debug only)
             #LOGGER.info(f'{s}Done.')
-
-
-
             # Eredmények rajzolása
             im0 = annotator.result()
             for c in centers:
@@ -471,12 +466,6 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
     val = (1, videoID)
     mycursor.execute(sql, val)
     mydb.commit()
-
-
-
-
-
-
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir/URL/glob, 0 for webcam')

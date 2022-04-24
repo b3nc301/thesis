@@ -48,7 +48,7 @@ list_points = list()
 # bind the callback function to window
 cv2.setMouseCallback(windowName, CallBackFunc)
 
-print("Please provide 4 corner points, and 3 distance points(start point, horizontal 1m distance endpoint, vertical 1m distance endpoint")
+print("Please provide 4 corner points(top-right, bottom-right, bottom-left, top-left), and 3 distance points(start point, horizontal 1m distance endpoint, vertical 1m distance endpoint")
 
 if __name__ == "__main__":
     # Check if the 4 points have been saved

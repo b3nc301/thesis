@@ -20,6 +20,7 @@ import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 
+from detect import getDistance, compute_perspective_transform, compute_point_perspective_transformation
 
 #mappaváltás az importokhoz
 path = './yolov5'
@@ -44,52 +45,6 @@ from utils.torch_utils import  select_device
 #vissza a jelenlegi mappába
 os.chdir("../")
 
-
-
-# https://deepnote.com/@deepnote/A-social-distancing-detector-using-a-Tensorflow-object-detection-model-Python-and-OpenCV-KBcEvWejRjGyjy2YnxiP5Q
-def compute_perspective_transform(corner_points,width,height,image):
-	""" Compute the transformation matrix
-	@ corner_points : 4 corner points selected from the image
-	@ height, width : size of the image
-	return : transformation matrix and the transformed image
-	"""
-	# Create an array out of the 4 corner points
-	corner_points_array = np.float32(corner_points)
-	# Create an array with the parameters (the dimensions) required to build the matrix
-	img_params = np.float32([[0,0],[width,0],[0,height],[width,height]])
-	# Compute and return the transformation matrix
-	matrix = cv2.getPerspectiveTransform(corner_points_array,img_params) 
-	img_transformed = cv2.warpPerspective(image,matrix,(width,height))
-	return matrix,img_transformed
-
-
-def compute_point_perspective_transformation(matrix,list_downoids):
-	""" Apply the perspective transformation to every ground point which have been detected on the main frame.
-	@ matrix : the 3x3 matrix 
-	@ list_downoids : list that contains the points to transform
-	return : list containing all the new points
-	"""
-	# Compute the new coordinates of our points
-	list_points_to_detect = np.float32(list_downoids).reshape(-1, 1, 2)
-	transformed_points = cv2.perspectiveTransform(list_points_to_detect, matrix)
-	# Loop over the points and add them to the list that will be returned
-	transformed_points_list = list()
-	for i in range(0,transformed_points.shape[0]):
-		transformed_points_list.append([transformed_points[i][0][0],transformed_points[i][0][1]])
-	return transformed_points_list
-
-def getDistance(matrix,p1,p2,d_w,d_h):
-    transformed_downoids_p1 = compute_point_perspective_transformation(matrix,(p1[0],p1[1]))
-    transformed_downoids_p2 = compute_point_perspective_transformation(matrix,(p2[0],p2[1]))
-    h = abs(p2[1]-p1[1])
-    w = abs(p2[0]-p1[0])
-    dis_w = float((w/d_w)*200)
-    dis_h = float((h/d_h)*200)
-    dist = math.sqrt(math.pow((dis_h),2) + math.pow((dis_w),2))
-    return dist
-
-#RTMP stream URL
-rtmp_url = "rtmp://localhost:1935/live/stream"
 #alap futó függvüny
 @torch.no_grad()
 def run(weights=ROOT / './yolov5m.pt',  # model.pt path(s)
@@ -170,14 +125,7 @@ def run(weights=ROOT / './yolov5m.pt',  # model.pt path(s)
         yCoord = cfg["image_parameters"]["py"]
 
     #változók beállítása
-    predictionList = np.zeros((4,10,5)) #az észleléseket tároló vektor
     prevViolated = list() #a korábbi mozgásokat tároló lista
-    violateID=0
-    #(4 képkockán max 10 észlelés, minden észleléshez tartozik 4 adat, x,y koordináta egy prediction ID, ami összeköti az észleléseket és egy frame number, hogy hány képkockán keresztül tartott az esemény)
-    frameCounter = 0 #képkocka számláló 
-    predictionID=0
-    frameNum = 0 
-    violateFrames=0
     # a hálózat alkalmazása a képkockákon
     if device.type != 'cpu':
         model(torch.zeros(1, 3, *imgsz).to(device).type_as(next(model.parameters())))  # run once
@@ -210,7 +158,6 @@ def run(weights=ROOT / './yolov5m.pt',  # model.pt path(s)
             s += '%gx%g ' % img.shape[2:]  # kiíró string(debug)
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             annotator = Annotator(im0, line_width=line_thickness, example=str(names))
-
             centers = list() # középpontok
             #emberek megtalálása és középpontok eltárolása
             det2 = pred2[0]
@@ -223,12 +170,12 @@ def run(weights=ROOT / './yolov5m.pt',  # model.pt path(s)
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
                 for *xyxy, conf, cls in reversed(det2):
                     mask=False
-                    center=[int((xyxy[0]+xyxy[2])/2), int(xyxy[3]), (0,255,0), mask, frameNum,-1]
+                    center=[int((xyxy[0]+xyxy[2])/2), int(xyxy[3]), path]
                     centers.append(center)
+                print("1st person")
                 print(centers)
-                print(prevCenters)
-                print("\n")
-            
+                print("2nd person")
+                print(prevCenters)            
             
             #print(centers)
             #perspektíva transzformáció
@@ -239,18 +186,19 @@ def run(weights=ROOT / './yolov5m.pt',  # model.pt path(s)
             distance_h = np.sqrt((dist_point[0][0] - dist_point[2][0]) ** 2 + (dist_point[0][1] - dist_point[2][1]) ** 2)
             for c in centers:
                 for c1 in prevCenters:
+                    print("Dist:")
                     print(getDistance(matrix, c, c1, distance_w, distance_h))
                     if(getDistance(matrix, c, c1, distance_w, distance_h)<min and c != c1):
-                        c1[2] = (0,0,255)
-                        c[2] = (0,0,255)
-                        print(getDistance(matrix, c, c1, distance_w, distance_h))
+                        print("Violated")
             prevCenters = centers.copy()
+            print('\n')
+
 
 
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='dir')
-    parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
+    parser.add_argument('--conf-thres', type=float, default=0.3, help='confidence threshold')
     parser.add_argument('--min', type=float, default=150, help='Minimum distance')
     opt = parser.parse_args()
     #print_args(FILE.stem, opt)
