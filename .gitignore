@@ -6,3 +6,7 @@ web.orig
 web/vendor
 web/.env
 demos/demoimages_orig
+demos/dist1
+demos/dist2
+demos/calib
+demos/150
