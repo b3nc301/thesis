@@ -1,0 +1,14 @@
+1st person
+[[435, 267, '/home/bencefieszl/thesis/thesis/demos/150/IMG_3383.JPG']]
+2nd person
+[]
+
+
+1st person
+[[304, 285, '/home/bencefieszl/thesis/thesis/demos/150/IMG_3384.JPG']]
+2nd person
+[[435, 267, '/home/bencefieszl/thesis/thesis/demos/150/IMG_3383.JPG']]
+Dist:
+161.87777192870416
+
+

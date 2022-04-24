@@ -1,0 +1,40 @@
+1st person
+[[180, 223, '/home/bencefieszl/thesis/thesis/demos/20220323000252642_352p.mp4images/Frame107.jpg']]
+2nd person
+[]
+
+
+1st person
+[[156, 226, '/home/bencefieszl/thesis/thesis/demos/20220323000252642_352p.mp4images/Frame112.jpg']]
+2nd person
+[[180, 223, '/home/bencefieszl/thesis/thesis/demos/20220323000252642_352p.mp4images/Frame107.jpg']]
+Dist:
+27.338855206490287
+Violated
+
+
+1st person
+[[261, 242, '/home/bencefieszl/thesis/thesis/demos/20220323000252642_352p.mp4images/Frame157.jpg']]
+2nd person
+[[156, 226, '/home/bencefieszl/thesis/thesis/demos/20220323000252642_352p.mp4images/Frame112.jpg']]
+Dist:
+136.16320924676597
+Violated
+
+
+1st person
+[[541, 237, '/home/bencefieszl/thesis/thesis/demos/20220323000252642_352p.mp4images/Frame219.jpg']]
+2nd person
+[[261, 242, '/home/bencefieszl/thesis/thesis/demos/20220323000252642_352p.mp4images/Frame157.jpg']]
+Dist:
+375.89038977686215
+
+
+1st person
+[[414, 243, '/home/bencefieszl/thesis/thesis/demos/20220323000252642_352p.mp4images/Frame57.jpg']]
+2nd person
+[[541, 237, '/home/bencefieszl/thesis/thesis/demos/20220323000252642_352p.mp4images/Frame219.jpg']]
+Dist:
+187.66067538555495
+
+

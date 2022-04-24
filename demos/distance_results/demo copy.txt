@@ -1,0 +1,67 @@
+1st person
+[[71, 281, '/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4images/Frame110.jpg']]
+2nd person
+[]
+
+
+1st person
+[[57, 279, '/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4images/Frame118.jpg']]
+2nd person
+[[71, 281, '/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4images/Frame110.jpg']]
+Dist:
+14.977221484807147
+Violated
+
+
+1st person
+[[75, 279, '/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4images/Frame123.jpg']]
+2nd person
+[[57, 279, '/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4images/Frame118.jpg']]
+Dist:
+16.069423835431028
+Violated
+
+
+1st person
+[[418, 226, '/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4images/Frame19.jpg']]
+2nd person
+[[75, 279, '/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4images/Frame123.jpg']]
+Dist:
+409.8625665356875
+
+
+1st person
+[[428, 225, '/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4images/Frame190.jpg']]
+2nd person
+[[418, 226, '/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4images/Frame19.jpg']]
+Dist:
+15.219921770105943
+Violated
+
+
+1st person
+[[448, 224, '/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4images/Frame193.jpg']]
+2nd person
+[[428, 225, '/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4images/Frame190.jpg']]
+Dist:
+29.769724883562795
+Violated
+
+
+1st person
+[[274, 264, '/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4images/Frame69.jpg']]
+2nd person
+[[448, 224, '/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4images/Frame193.jpg']]
+Dist:
+267.9461361854619
+
+
+1st person
+[[243, 264, '/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4images/Frame75.jpg']]
+2nd person
+[[274, 264, '/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4images/Frame69.jpg']]
+Dist:
+33.643149192491066
+Violated
+
+

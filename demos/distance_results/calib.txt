@@ -1,0 +1,24 @@
+1st person
+[[305, 289, '/home/bencefieszl/thesis/thesis/demos/calib/IMG_3385.JPG']]
+2nd person
+[]
+
+
+1st person
+[[389, 271, '/home/bencefieszl/thesis/thesis/demos/calib/IMG_3386.JPG']]
+2nd person
+[[305, 289, '/home/bencefieszl/thesis/thesis/demos/calib/IMG_3385.JPG']]
+Dist:
+107.26693990026844
+Violated
+
+
+1st person
+[[312, 257, '/home/bencefieszl/thesis/thesis/demos/calib/IMG_3387.JPG']]
+2nd person
+[[389, 271, '/home/bencefieszl/thesis/thesis/demos/calib/IMG_3386.JPG']]
+Dist:
+102.98111491366731
+Violated
+
+
