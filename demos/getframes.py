@@ -3,7 +3,7 @@ import random
 import os
 
 
-videoLink = "IMG_2567.MP4"
+videoLink = "/home/bencefieszl/thesis/thesis/demos/20220323005815189_352p.mp4"
 # Opens the inbuilt camera of laptop to capture video.
 cap = cv2.VideoCapture(videoLink)
 i = 0
