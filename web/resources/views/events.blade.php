@@ -40,7 +40,7 @@
                         <th scope="col">eventID</th>
                         <th scope="col">Esemény típusa</th>
                         <th scope="col">Időpont</th>
-                        <th scope="col">Időtartam</th>
+                        <th scope="col">Időtartam(másodperc)</th>
                         <th scope="col">Videó neve</th>
                         <th scope="col">Esemény szintje</th>
                         <th scope="col">Megtekintés</th>
@@ -55,7 +55,7 @@
                         <th scope="col">{{$report->id}}</th>
                         <td>@if($report->classID==0) Maszkviselés megszegve @else @if($report->classID==3) Távolság megsértve @else N/A @endif @endif</td>
                         <td>{{$report->time}}</td>
-                        <td>{{$report->frames/60}}</td>
+                        <td>{{$report->frames/25}}</td>
                         <td>{{$report->video->videoName}}</td>
                         <td>{{$report->level}}</td>
                         <td><button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#viewModal" data-bs-url={{$report->video->videoURL}}> Megtekintés</button></td>
