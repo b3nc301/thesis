@@ -46,8 +46,6 @@ from utils.torch_utils import  select_device
 os.chdir("../")
 def getCoord(matrix,p1,d_w,d_h,im):
     transformed_downoids_p1 = compute_point_perspective_transformation(matrix,(p1[0],p1[1]))
-    print("transformed downoids:")
-    print(transformed_downoids_p1)
     h = transformed_downoids_p1[0][0]
     w = transformed_downoids_p1[0][1]
     if h>0 and w>0 :
@@ -217,7 +215,7 @@ def run(weights=ROOT / './yolov5m.pt',  # model.pt path(s)
             distance_w = np.sqrt((dist_point[0][0] - dist_point[1][0]) ** 2 + (dist_point[0][1] - dist_point[1][1]) ** 2)
             distance_h = np.sqrt((dist_point[0][0] - dist_point[2][0]) ** 2 + (dist_point[0][1] - dist_point[2][1]) ** 2)
             for c in centers:
-                print("Dist:")
+                print("Coordinates:")
                 d_w,d_h,bird_view_img,td=getCoord(matrix, c, distance_w, distance_h,bird_view_img)
                 cv2.circle(im0,(int(c[0]),int(c[1])), 1, (255,0,0),10)
                 print(d_w,d_h)
