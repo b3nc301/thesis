@@ -179,7 +179,7 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
 
     #madártávlati konfig beolvasása
     with open("config.yml", "r") as ymlfile:
-        cfg = yaml.load(ymlfile)
+        cfg = yaml.safe_load(ymlfile)
     width_og, height_og = 0,0
     corner_points = []
     for section in cfg:
@@ -220,7 +220,7 @@ def run(weights=ROOT / 'best.pt',  # model.pt path(s)
         model(torch.zeros(1, 3, *imgsz).to(device).type_as(next(model.parameters())))  # run once
 
     for path, img, im0s, vid_cap, s in dataset:
-
+        cv2.imshow("asd", im0s)
         frameCounter += 1
 
         #A képek betöltése és átalakítása
